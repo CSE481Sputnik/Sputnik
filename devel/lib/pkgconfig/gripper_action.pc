@@ -1,0 +1,8 @@
+prefix=/home/motioncap/catkin_ws/devel
+
+Name: gripper_action
+Description: Description of gripper_action
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/motioncap/catkin_ws/devel/lib 
+Requires: 
