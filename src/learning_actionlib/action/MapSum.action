@@ -1,0 +1,8 @@
+#goal definition
+int64[] vals
+---
+#result definition
+int32 res
+---
+#feedback
+int32 res
