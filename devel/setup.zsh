@@ -3,5 +3,5 @@
 
 CATKIN_SHELL=zsh
 emulate sh # emulate POSIX
-. "/home/motioncap/catkin_ws/devel/setup.sh"
+. "/home/team7/catkin_ws/devel/setup.sh"
 emulate zsh # back to zsh mode

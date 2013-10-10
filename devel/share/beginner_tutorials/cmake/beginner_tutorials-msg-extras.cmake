@@ -1,2 +1,2 @@
-set(beginner_tutorials_MESSAGE_FILES "/home/motioncap/catkin_ws/src/beginner_tutorials/msg/Num.msg")
-set(beginner_tutorials_SERVICE_FILES "/home/motioncap/catkin_ws/src/beginner_tutorials/srv/AddTwoInts.srv")
+set(beginner_tutorials_MESSAGE_FILES "/home/team7/catkin_ws/src/beginner_tutorials/msg/Num.msg")
+set(beginner_tutorials_SERVICE_FILES "/home/team7/catkin_ws/src/beginner_tutorials/srv/AddTwoInts.srv")
