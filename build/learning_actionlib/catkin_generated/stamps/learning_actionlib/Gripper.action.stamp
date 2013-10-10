@@ -1,9 +1,0 @@
-#goal definition
-int64 p
----
-#result definition
-int64 v
-int64 p
----
-#feedback
-int64[] fed
