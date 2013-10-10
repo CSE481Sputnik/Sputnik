@@ -1,5 +1,8 @@
 *.py[cod]
 
+# ROS stuff
+catkin_ws/build/
+
 # C extensions
 *.so
 
@@ -7,7 +10,7 @@
 *.egg
 *.egg-info
 dist
-build/*
+build
 eggs
 parts
 bin
