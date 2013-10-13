@@ -6,7 +6,7 @@
 # Supported command line options:
 # --extend: skips the undoing of changes from a previously sourced setup file
 
-_SETUP_UTIL="/home/team7/catkin_ws/devel/_setup_util.py"
+_SETUP_UTIL="/home/team7/ROS/catkin_ws/devel/_setup_util.py"
 
 if [ ! -f "$_SETUP_UTIL" ]; then
   echo "Missing Python script: $_SETUP_UTIL"
