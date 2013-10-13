@@ -37,6 +37,6 @@ class GripperClient():
             gripper_goal.command.position = 1.0
 
         gripper_client.send_goal(gripper_goal)
-        gripper_client.wait_for_result(rospy.Duration(10.0))
-        if (gripper_client.get_state() != GoalStatus.SUCCEEDED):
-	    rospy.logwarn('Gripper action unsuccessful.')
+        #gripper_client.wait_for_result(rospy.Duration(10.0))
+        #if (gripper_client.get_state() != GoalStatus.SUCCEEDED):
+	    #rospy.logwarn('Gripper action unsuccessful.')
