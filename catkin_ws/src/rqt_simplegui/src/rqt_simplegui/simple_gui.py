@@ -13,6 +13,7 @@ from python_qt_binding.QtGui import QGroupBox
 from python_qt_binding.QtCore import QSignalMapper, qWarning, Signal
 from sound_play.msg import SoundRequest
 from sound_play.libsoundplay import SoundClient
+from gripper_client import GripperClient
 
 
 class SimpleGUI(Plugin):
@@ -23,6 +24,8 @@ class SimpleGUI(Plugin):
         super(SimpleGUI, self).__init__(context)
         self.setObjectName('SimpleGUI')
         self._widget = QWidget()
+
+        self._gripper_client = GripperClient()
         
         self._sound_client = SoundClient()
         rospy.Subscriber('robotsound', SoundRequest, self.sound_cb)
@@ -32,20 +35,63 @@ class SimpleGUI(Plugin):
         
         large_box = QtGui.QVBoxLayout()
         
-	button_box = QtGui.QHBoxLayout()
-        button_box.addWidget(self.create_button('Say something'))
-	button_box.addStretch(1)
-        large_box.addLayout(button_box)
-	large_box.addItem(QtGui.QSpacerItem(100,20))
+        lower_box = QtGui.QHBoxLayout()
+        large_box.addLayout(lower_box)
+
+        gripper_box = QtGui.QHBoxLayout()
+        lower_box.addLayout(gripper_box)
+
+        self.gripper_box_label = QtGui.QLabel('Grippers: ')
+        gripper_box.addWidget(self.gripper_box_label)
+
+#        self.gripper_left_label = QtGui.QLabel('L')
+#        gripper_box.addWidget(self.gripper_left_label)
+
+        gripper_left_buttons = QtGui.QVBoxLayout()
+        g_left_open_button = QtGui.QPushButton('Open L', self._widget)
+        g_left_open_button.clicked.connect(self.gripper_cb)
+        gripper_left_buttons.addWidget(g_left_open_button)
+        g_left_close_button = QtGui.QPushButton('Close L', self._widget)
+        g_left_close_button.clicked.connect(self.gripper_cb)
+        gripper_left_buttons.addWidget(g_left_close_button)
+        gripper_box.addLayout(gripper_left_buttons)
+
+#        self.gripper_right_label = QtGui.QLabel('R')
+#        gripper_box.addWidget(self.gripper_right_label)
+
+        gripper_right_buttons = QtGui.QVBoxLayout()
+        g_right_open_button = QtGui.QPushButton('Open R', self._widget)
+        g_right_open_button.clicked.connect(self.gripper_cb)
+        gripper_right_buttons.addWidget(g_right_open_button)
+        g_right_close_button = QtGui.QPushButton('Close R', self._widget)
+        g_right_close_button.clicked.connect(self.gripper_cb)
+        gripper_right_buttons.addWidget(g_right_close_button)
+        gripper_box.addLayout(gripper_right_buttons)
+
+        lower_box.addItem(QtGui.QSpacerItem(100,20))
+
+	speech_box = QtGui.QHBoxLayout()
         
-        speech_box = QtGui.QHBoxLayout()
-        self.speech_label = QtGui.QLabel('Robot has not spoken yet')
-        palette = QtGui.QPalette()
-        palette.setColor(QtGui.QPalette.Foreground,QtCore.Qt.blue)
-        self.speech_label.setPalette(palette)
+        self.speech_label = QtGui.QLabel('Speech: ')
         speech_box.addWidget(self.speech_label)
 
-        large_box.addLayout(speech_box)
+        self.speech_text = QtGui.QLineEdit(self._widget);
+        speech_box.addWidget(self.speech_text);
+
+        speech_box.addWidget(self.create_button('Speak'))
+	speech_box.addStretch(1)
+        lower_box.addLayout(speech_box)
+
+	large_box.addItem(QtGui.QSpacerItem(100,20))
+        
+#        speech_box = QtGui.QHBoxLayout()
+#        self.speech_label = QtGui.QLabel('Robot has not spoken yet')
+#        palette = QtGui.QPalette()
+#        palette.setColor(QtGui.QPalette.Foreground,QtCore.Qt.blue)
+#        self.speech_label.setPalette(palette)
+#        speech_box.addWidget(self.speech_label)
+
+#        large_box.addLayout(speech_box)
 	large_box.addStretch(1)
 
         self._widget.setObjectName('SimpleGUI')
@@ -69,9 +115,21 @@ class SimpleGUI(Plugin):
 
     def command_cb(self):
         button_name = self._widget.sender().text()
-        if (button_name == 'Say something'):
-            qWarning('Robot will say: something')
-            self._sound_client.say('something')
+        if (button_name == 'Speak'):
+            text = self.speech_text.text()
+            qWarning('Robot will say: ' + text)
+            self._sound_client.say(text)
+
+    def gripper_cb(self):
+        button_name = self._widget.sender().text()
+        if button_name == 'Open L':
+            self._gripper_client.command(True, False)
+        elif button_name == 'Open R':
+            self._gripper_client.command(False, False)
+        elif button_name == 'Close L':
+            self._gripper_client.command(True, True)
+        elif button_name == 'Close R':
+            self._gripper_client.command(False, True)
             
     def shutdown_plugin(self):
         # TODO unregister all publishers here
