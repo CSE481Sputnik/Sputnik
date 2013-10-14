@@ -15,6 +15,7 @@ from sound_play.msg import SoundRequest
 from sound_play.libsoundplay import SoundClient
 from gripper_client import GripperClient
 from base_publisher import BasePublisher
+from head_client import HeadClient
 
 
 class SimpleGUI(Plugin):
@@ -31,6 +32,9 @@ class SimpleGUI(Plugin):
         self._base_publisher = BasePublisher()
         
         self._sound_client = SoundClient()
+
+        self._head_client = HeadClient()
+
         rospy.Subscriber('robotsound', SoundRequest, self.sound_cb)
 
         QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
@@ -133,6 +137,27 @@ class SimpleGUI(Plugin):
 
         upper_box.addLayout(move_base_controls)
 
+
+        # HEAD LAYOUT
+        move_head_controls = QtGui.QHBoxLayout()
+
+        move_vert_controls = QtGui.QHBoxLayout()
+        move_vert_sldr = self.create_vert_sldr()
+        move_vert_sldr.valueChanged[int].connect(self.move_head_vert)
+
+        move_hor_controls = QtGui.QHBoxLayout()
+        move_hor_sldr = self.create_hor_sldr()
+        move_hor_sldr.valueChanged[int].connect(self.move_head_hor)
+
+        move_vert_controls.addWidget(move_vert_sldr)
+        move_hor_controls.addWidget(move_hor_sldr)
+
+        move_head_controls.addLayout(move_vert_controls)
+        move_head_controls.addLayout(move_hor_controls)
+
+        upper_box.addLayout(move_head_controls)
+        
+
         self._widget.setObjectName('SimpleGUI')
         self._widget.setLayout(large_box)
         context.add_widget(self._widget)
@@ -151,6 +176,14 @@ class SimpleGUI(Plugin):
         btn.setAutoRepeat(True)
         btn.setAutoRepeatInterval(10)
         return btn
+
+    def create_vert_sldr(self):
+        sldr = QtGui.QSlider()
+        return sldr
+
+    def create_hor_sldr(self):
+        sldr = QtGui.QSlider(QtCore.Qt.Horizontal)
+        return sldr
 
     def sound_sig_cb(self, sound_request):
         qWarning('Received sound signal.')
@@ -196,7 +229,13 @@ class SimpleGUI(Plugin):
             self._base_publisher.move_bkwd_right(speed)
         elif btn_name == 'Backward Left':
             self._base_publisher.move_bkwd_left(speed)
-            
+
+    def move_head_vert(self, pos):
+        self._head_client.move_head_vert(pos)
+
+    def move_head_hor(self, pos):
+        self._head_client.move_head_hor(pos)
+ 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
         pass
