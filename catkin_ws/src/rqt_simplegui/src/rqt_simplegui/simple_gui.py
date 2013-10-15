@@ -35,6 +35,8 @@ class SimpleGUI(Plugin):
 
         rospy.Subscriber('robotsound', SoundRequest, self.sound_cb)
         self.sound_sig.connect(self.sound_sig_cb)
+
+        self._base_speed = 0.5
         
         # OVERALL LAYOUT
         large_box = QtGui.QVBoxLayout()
@@ -49,8 +51,8 @@ class SimpleGUI(Plugin):
         lower_box.addLayout(gripper_box)
 
         # GRIPPER CONTROLS
-        self.gripper_box_label = QtGui.QLabel('Grippers: ')
-        gripper_box.addWidget(self.gripper_box_label)
+        gripper_box_label = QtGui.QLabel('Grippers: ')
+        gripper_box.addWidget(gripper_box_label)
 
         gripper_left_btns = QtGui.QVBoxLayout()
         g_left_open_btn = QtGui.QPushButton('Open L', self._widget)
@@ -75,8 +77,8 @@ class SimpleGUI(Plugin):
         # SPEECH CONTROLS
         speech_box = QtGui.QHBoxLayout()
         
-        self.speech_label = QtGui.QLabel('Speech: ')
-        speech_box.addWidget(self.speech_label)
+        speech_label = QtGui.QLabel('Speech: ')
+        speech_box.addWidget(speech_label)
 
         self.speech_text = QtGui.QLineEdit(self._widget);
         speech_box.addWidget(self.speech_text);
@@ -98,44 +100,71 @@ class SimpleGUI(Plugin):
 
 
         # BASE MOVEMENT CONTROLS
-        move_base_controls = QtGui.QVBoxLayout()
+        base_controls = QtGui.QHBoxLayout()
+        base_label = QtGui.QLabel('Base Movement: ')
+        base_label.setGeometry(100,100,100,100)
         
-        self.base_label = QtGui.QLabel('Base Position: ')
-        move_base_controls.addWidget(self.base_label)
+
+        move_speed_controls = QtGui.QVBoxLayout()
+        move_speed_controls.addWidget(base_label)
+
+        move_speed_label = QtGui.QLabel('Move Speed')
+        move_speed_controls.addWidget(move_speed_label)
+        move_speed_sldr = self.create_vert_sldr()
+        move_speed_sldr.valueChanged[int].connect(self._change_move_speed)
+        move_speed_controls.addWidget(move_speed_sldr)
+
+
+        move_base_controls = QtGui.QVBoxLayout()
 
         move_fwd_controls = QtGui.QHBoxLayout()
-        move_fwd_btn = self.create_toggle_btn("Forward")
-        move_fwd_btn.clicked.connect(self.make_move_base_cd(0.5))
-        move_fwd_controls.addWidget(move_fwd_btn)
-        move_fwd_right_btn = self.create_toggle_btn("Forward Right")
-        move_fwd_right_btn.clicked.connect(self.make_move_base_cd(0.5))
+        move_fwd_right_btn = self.create_toggle_btn("Forward Left")
+        move_fwd_right_btn.clicked.connect(self.make_move_base_cb(0.3))
         move_fwd_controls.addWidget(move_fwd_right_btn)
-        move_fwd_left_btn = self.create_toggle_btn("Forward Left")
-        move_fwd_left_btn.clicked.connect(self.make_move_base_cd(0.5))
+        move_fwd_btn = self.create_toggle_btn("Forward")
+        move_fwd_btn.clicked.connect(self.make_move_base_cb(0.3))
+        move_fwd_controls.addWidget(move_fwd_btn)
+        move_fwd_left_btn = self.create_toggle_btn("Forward Right")
+        move_fwd_left_btn.clicked.connect(self.make_move_base_cb(0.3))
         move_fwd_controls.addWidget(move_fwd_left_btn)
 
+        turn_controls = QtGui.QHBoxLayout()
+        turn_left_btn = self.create_toggle_btn("Turn Left")
+        turn_left_btn.clicked.connect(self.make_move_base_cb(0.3))
+        turn_controls.addWidget(turn_left_btn)
+        stop_btn = self.create_toggle_btn("STOP")
+        turn_controls.addWidget(stop_btn)
+        turn_right_btn = self.create_toggle_btn("Turn Right")
+        turn_right_btn.clicked.connect(self.make_move_base_cb(0.3))
+        turn_controls.addWidget(turn_right_btn)
+
         move_bkwd_controls = QtGui.QHBoxLayout()
-        move_bkwd_btn = self.create_toggle_btn("Backward")
-        move_bkwd_btn.clicked.connect(self.make_move_base_cd(0.5))
-        move_bkwd_controls.addWidget(move_bkwd_btn)
-        move_bkwd_right_btn = self.create_toggle_btn("Backward Right")
-        move_bkwd_right_btn.clicked.connect(self.make_move_base_cd(0.5))
+        move_bkwd_right_btn = self.create_toggle_btn("Backward Left")
+        move_bkwd_right_btn.clicked.connect(self.make_move_base_cb(0.3))
         move_bkwd_controls.addWidget(move_bkwd_right_btn)
-        move_bkwd_left_btn = self.create_toggle_btn("Backward Left")
-        move_bkwd_left_btn.clicked.connect(self.make_move_base_cd(0.5))
+        move_bkwd_btn = self.create_toggle_btn("Backward")
+        move_bkwd_btn.clicked.connect(self.make_move_base_cb(0.3))
+        move_bkwd_controls.addWidget(move_bkwd_btn)
+        move_bkwd_left_btn = self.create_toggle_btn("Backward Right")
+        move_bkwd_left_btn.clicked.connect(self.make_move_base_cb(0.3))
         move_bkwd_controls.addWidget(move_bkwd_left_btn)
 
         move_base_controls.addLayout(move_fwd_controls)
+        move_base_controls.addLayout(turn_controls)
         move_base_controls.addLayout(move_bkwd_controls)
 
-        upper_box.addLayout(move_base_controls)
+
+        base_controls.addLayout(move_speed_controls)
+        base_controls.addLayout(move_base_controls)
+
+        upper_box.addLayout(base_controls)
 
 
         # HEAD CONTROLS
         move_head_controls = QtGui.QHBoxLayout()
 
-        self.head_label = QtGui.QLabel('Head Position: ')
-        move_head_controls.addWidget(self.head_label)
+        head_label = QtGui.QLabel('Head Position: ')
+        move_head_controls.addWidget(head_label)
 
         move_vert_controls = QtGui.QHBoxLayout()
         move_vert_sldr = self.create_vert_sldr()
@@ -210,10 +239,12 @@ class SimpleGUI(Plugin):
 
     def create_vert_sldr(self):
         sldr = QtGui.QSlider()
+        sldr.setSliderPosition(50)
         return sldr
 
     def create_hor_sldr(self):
         sldr = QtGui.QSlider(QtCore.Qt.Horizontal)
+        sldr.setSliderPosition(50)
         return sldr
 
     def sound_sig_cb(self, sound_request):
@@ -240,9 +271,9 @@ class SimpleGUI(Plugin):
         elif btn_name == 'Close R':
             self._gripper_client.command(False, True)
 
-    def make_move_base_cd(self, speed):
+    def make_move_base_cb(self, speed):
         def callback():
-            self.move_base_cb(speed)
+            self.move_base_cb(self._base_speed)
         return callback
 
     def move_base_cb(self, speed):
@@ -254,12 +285,19 @@ class SimpleGUI(Plugin):
             self._base_publisher.move_fwd_right(speed)
         elif btn_name == 'Forward Left':
             self._base_publisher.move_fwd_left(speed)
+        elif btn_name == 'Turn Left':
+            self._base_publisher.turn_left(speed)
+        elif btn_name == 'Turn Right':
+            self._base_publisher.turn_right(speed)
         elif btn_name == 'Backward':
             self._base_publisher.move_bkwd_straight(speed)
         elif btn_name == 'Backward Right':
             self._base_publisher.move_bkwd_right(speed)
         elif btn_name == 'Backward Left':
             self._base_publisher.move_bkwd_left(speed)
+
+    def _change_move_speed(self, speed_percent):
+        self._base_speed = speed_percent / 100.0
 
     def move_head_vert(self, pos):
         self._head_client.move_head_vert(pos)
@@ -268,16 +306,14 @@ class SimpleGUI(Plugin):
         self._head_client.move_head_hor(pos)
  
     def shutdown_plugin(self):
-        # TODO unregister all publishers here
+        # nothing to cleanup
         pass
 
     def save_settings(self, plugin_settings, instance_settings):
-        # TODO save intrinsic configuration, usually using:
         # instance_settings.set_value(k, v)
         pass
 
     def restore_settings(self, plugin_settings, instance_settings):
-        # TODO restore intrinsic configuration, usually using:
         # v = instance_settings.value(k)
         pass
 
