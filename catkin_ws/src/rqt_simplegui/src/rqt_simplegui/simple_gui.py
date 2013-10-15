@@ -39,7 +39,7 @@ class SimpleGUI(Plugin):
         # OVERALL LAYOUT
         large_box = QtGui.QVBoxLayout()
 
-        upper_box = QtGui.QHBoxLayout()
+        upper_box = QtGui.QVBoxLayout()
         large_box.addLayout(upper_box)
         
         lower_box = QtGui.QHBoxLayout()
