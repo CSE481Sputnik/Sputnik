@@ -155,7 +155,7 @@ class SimpleGUI(Plugin):
        
         # ARM CONTROLS
 
-        arm_controls = QtGui.QVBoxLayout()
+        arm_controls = QtGui.QHBoxLayout()
         arm_r_controls = QtGui.QVBoxLayout()
         arm_l_controls = QtGui.QVBoxLayout()
         arm_r_controls.addWidget(QtGui.QLabel('Right Arm: '))
@@ -166,16 +166,22 @@ class SimpleGUI(Plugin):
 
         for i in range(1, 4):
             slider = QtGui.QSlider(QtCore.Qt.Vertical, self._widget)
+            slider.setObjectName('l_'+str(i))
             slider.setFocusPolicy(QtCore.Qt.NoFocus)
-            slider.setGeometry(30, 40, 30, 100)
+            slider.setValue(50)
+            slider.setTickInterval(10)
+            slider.sliderReleased.connect(self.move_arm)
             arm_l_control_grid.addWidget(slider, 0, i-1)
             arm_l_control_grid.addWidget(QtGui.QLabel(str(i)), 1, i-1)
 
 
         for i in range(1, 4):
             slider = QtGui.QSlider(QtCore.Qt.Vertical, self._widget)
+            slider.setObjectName('r_'+str(i))
             slider.setFocusPolicy(QtCore.Qt.NoFocus)
-            slider.setGeometry(30, 40, 30, 100)
+            slider.setTickInterval(10)
+            slider.setValue(50)
+            slider.sliderReleased.connect(self.move_arm)
             arm_r_control_grid.addWidget(slider, 0, i-1)
             arm_r_control_grid.addWidget(QtGui.QLabel(str(i)), 1, i-1)
 
@@ -239,6 +245,11 @@ class SimpleGUI(Plugin):
             self._gripper_client.command(True, True)
         elif btn_name == 'Close R':
             self._gripper_client.command(False, True)
+
+    def move_arm(self):
+        qWarning('Unimplemented')
+        qWarning('Value: ' + str(self._widget.sender().value()))
+        qWarning('Name: ' + str(self._widget.sender().objectName()))
 
     def make_move_base_cd(self, speed):
         def callback():
