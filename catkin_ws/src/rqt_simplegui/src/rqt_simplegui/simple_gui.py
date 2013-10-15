@@ -24,22 +24,19 @@ class SimpleGUI(Plugin):
 
     def __init__(self, context):
         super(SimpleGUI, self).__init__(context)
-        self.setObjectName('SimpleGUI')
+        self.setObjectName('SimpleTeleopGUI')
         self._widget = QWidget()
 
+        # INIT CLIENTS
         self._gripper_client = GripperClient()
-
         self._base_publisher = BasePublisher()
-        
         self._sound_client = SoundClient()
-
         self._head_client = HeadClient()
 
         rospy.Subscriber('robotsound', SoundRequest, self.sound_cb)
-
-        QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
         self.sound_sig.connect(self.sound_sig_cb)
         
+        # OVERALL LAYOUT
         large_box = QtGui.QVBoxLayout()
 
         upper_box = QtGui.QHBoxLayout()
@@ -51,12 +48,9 @@ class SimpleGUI(Plugin):
         gripper_box = QtGui.QHBoxLayout()
         lower_box.addLayout(gripper_box)
 
-        # GRIPPERS
+        # GRIPPER CONTROLS
         self.gripper_box_label = QtGui.QLabel('Grippers: ')
         gripper_box.addWidget(self.gripper_box_label)
-
-#        self.gripper_left_label = QtGui.QLabel('L')
-#        gripper_box.addWidget(self.gripper_left_label)
 
         gripper_left_btns = QtGui.QVBoxLayout()
         g_left_open_btn = QtGui.QPushButton('Open L', self._widget)
@@ -66,9 +60,6 @@ class SimpleGUI(Plugin):
         g_left_close_btn.clicked.connect(self.gripper_cb)
         gripper_left_btns.addWidget(g_left_close_btn)
         gripper_box.addLayout(gripper_left_btns)
-
-#        self.gripper_right_label = QtGui.QLabel('R')
-#        gripper_box.addWidget(self.gripper_right_label)
 
         gripper_right_btns = QtGui.QVBoxLayout()
         g_right_open_btn = QtGui.QPushButton('Open R', self._widget)
@@ -81,7 +72,7 @@ class SimpleGUI(Plugin):
 
         lower_box.addItem(QtGui.QSpacerItem(100,20))
 
-        # SPEECH
+        # SPEECH CONTROLS
         speech_box = QtGui.QHBoxLayout()
         
         self.speech_label = QtGui.QLabel('Speech: ')
@@ -104,11 +95,13 @@ class SimpleGUI(Plugin):
 #        speech_box.addWidget(self.speech_label)
 
 #        large_box.addLayout(speech_box)
-        large_box.addStretch(1)
 
 
-        # BASE MOVEMENT
+        # BASE MOVEMENT CONTROLS
         move_base_controls = QtGui.QVBoxLayout()
+        
+        self.base_label = QtGui.QLabel('Base Position: ')
+        move_base_controls.addWidget(self.base_label)
 
         move_fwd_controls = QtGui.QHBoxLayout()
         move_fwd_btn = self.create_toggle_btn("Forward")
@@ -138,8 +131,11 @@ class SimpleGUI(Plugin):
         upper_box.addLayout(move_base_controls)
 
 
-        # HEAD LAYOUT
+        # HEAD CONTROLS
         move_head_controls = QtGui.QHBoxLayout()
+
+        self.head_label = QtGui.QLabel('Head Position: ')
+        move_head_controls.addWidget(self.head_label)
 
         move_vert_controls = QtGui.QHBoxLayout()
         move_vert_sldr = self.create_vert_sldr()
@@ -156,8 +152,43 @@ class SimpleGUI(Plugin):
         move_head_controls.addLayout(move_hor_controls)
 
         upper_box.addLayout(move_head_controls)
-        
+       
+        # ARM CONTROLS
 
+        arm_controls = QtGui.QVBoxLayout()
+        arm_r_controls = QtGui.QVBoxLayout()
+        arm_l_controls = QtGui.QVBoxLayout()
+        arm_r_controls.addWidget(QtGui.QLabel('Right Arm: '))
+        arm_l_controls.addWidget(QtGui.QLabel('Left Arm: '))
+        
+        arm_l_control_grid = QtGui.QGridLayout()
+        arm_r_control_grid = QtGui.QGridLayout()
+
+        for i in range(1, 4):
+            slider = QtGui.QSlider(QtCore.Qt.Vertical, self._widget)
+            slider.setFocusPolicy(QtCore.Qt.NoFocus)
+            slider.setGeometry(30, 40, 30, 100)
+            arm_l_control_grid.addWidget(slider, 0, i-1)
+            arm_l_control_grid.addWidget(QtGui.QLabel(str(i)), 1, i-1)
+
+
+        for i in range(1, 4):
+            slider = QtGui.QSlider(QtCore.Qt.Vertical, self._widget)
+            slider.setFocusPolicy(QtCore.Qt.NoFocus)
+            slider.setGeometry(30, 40, 30, 100)
+            arm_r_control_grid.addWidget(slider, 0, i-1)
+            arm_r_control_grid.addWidget(QtGui.QLabel(str(i)), 1, i-1)
+
+        arm_l_controls.addLayout(arm_l_control_grid)
+        arm_r_controls.addLayout(arm_r_control_grid)
+
+        arm_controls.addLayout(arm_l_controls)
+        arm_controls.addLayout(arm_r_controls)
+      
+        large_box.addLayout(arm_controls)
+
+        # SET EVERYTHING
+        QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
         self._widget.setObjectName('SimpleGUI')
         self._widget.setLayout(large_box)
         context.add_widget(self._widget)

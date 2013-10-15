@@ -21,6 +21,22 @@ class BasePublisher():
         linear = Vector3(speed, 0.0, 0.0)
         self._move_tick(linear_vector=linear)
 
+    def turn_right(self, speed):
+        angular = Vector3(0.0, 0.0, -1.0*speed)
+        self._move_tick(angular_vector=angular)
+
+    def turn_left(self, speed):
+        angular = Vector3(0.0, 0.0, speed)
+        self._move_tick(angular_vector=angular)
+
+    def strafe_right(self, speed):
+        linear = Vector3(0.0, -1.0*speed, 0.0)
+        self._move_tick(linear_vector=linear)
+
+    def strafe_left(self, speed):
+        linear = Vector3(0.0, speed, 0.0)
+        self._move_tick(linear_vector=linear)
+
     def move_fwd_right(self, speed):
         linear = Vector3(speed, 0.0, 0.0)
         angular = Vector3(0.0, 0.0, -1.0*speed)
