@@ -1,8 +1,0 @@
-prefix=/home/team7/ROS/catkin_ws/devel
-
-Name: beginner_tutorials
-Description: Description of beginner_tutorials
-Version: 0.0.0
-Cflags: -I/home/team7/ROS/catkin_ws/devel/include -I/home/team7/ROS/catkin_ws/src/beginner_tutorials/include
-Libs: -L/home/team7/ROS/catkin_ws/devel/lib -lbeginner_tutorials
-Requires: roscpp rospy std_msgs

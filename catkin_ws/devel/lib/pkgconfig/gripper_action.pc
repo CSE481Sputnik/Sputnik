@@ -1,8 +1,0 @@
-prefix=/home/team7/ROS/catkin_ws/devel
-
-Name: gripper_action
-Description: Description of gripper_action
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/team7/ROS/catkin_ws/devel/lib 
-Requires: 
