@@ -1,7 +1,8 @@
-*.py[cod]
+*.py[cod~]
 
 # ROS stuff
 catkin_ws/build/
+catkin_ws/devel/
 
 # C extensions
 *.so
