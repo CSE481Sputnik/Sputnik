@@ -58,8 +58,8 @@ class ArmGUI(Plugin):
         self.all_joint_names = []
         self.all_joint_poses = []
 
-        self.saved_r_arm_pose = None
-        self.saved_l_arm_pose = None
+        self.saved_r_arm_poses = []
+        self.saved_l_arm_poses = []
 
         self.lock = threading.Lock()
         rospy.Subscriber('joint_states', JointState, self.joint_states_cb)
@@ -105,8 +105,14 @@ class ArmGUI(Plugin):
         state_box.addWidget(self.r_state_label)
         state_box.addItem(QtGui.QSpacerItem(50,20))
         state_box.addWidget(self.l_state_label)
+        state_box.addWidget(self.create_button('Clear Poses'))
         state_box.addStretch(1)
         large_box.addLayout(state_box)
+
+        poses_box = QtGui.QVBoxLayout()
+        self.poses_count_label = QtGui.QLabel('No Saved Poses')
+        poses_box.addWidget(self.poses_count_label)
+        large_box.addLayout(poses_box)
 
         large_box.addStretch(1)
         self._widget.setObjectName('ArmGUI')
@@ -114,11 +120,15 @@ class ArmGUI(Plugin):
         context.add_widget(self._widget)
 	rospy.loginfo('GUI initialization complete.')
         
+        
+
     def create_button(self, name):
         btn = QtGui.QPushButton(name, self._widget)
         btn.clicked.connect(self.command_cb)
         return btn
 
+    # This is a really janky way of doing this, you should check
+    # self._widget.sender() to figure out where the event originated.
     def command_cb(self):
         button_name = self._widget.sender().text()
         if (button_name == 'Relax right arm'):
@@ -137,38 +147,48 @@ class ArmGUI(Plugin):
             self.move_arm('r')
         elif (button_name == 'Move left arm to saved pose'):
             self.move_arm('l')
+        elif (button_name == 'Clear Poses'):
+            self.clear_poses
 
     def save_pose(self, side_prefix):
         if (side_prefix == 'r'):
-            self.saved_r_arm_pose = self.get_joint_state('r')
-            self.r_state_label.setText('Saved right arm pose: ' + str(self.saved_r_arm_pose))
+            self.saved_r_arm_poses.append(self.get_joint_state('r'))
+            self.r_state_label.setText('Saved right arm pose!')
         else:
-            self.saved_l_arm_pose = self.get_joint_state('l')
-            self.l_state_label.setText('Saved left arm pose: ' + str(self.saved_l_arm_pose))
+            self.saved_l_arm_poses.append(self.get_joint_state('l'))
+            self.l_state_label.setText('Saved left arm pose!')
 
     def move_arm(self, side_prefix):
         if (side_prefix == 'r'):
-            if self.saved_r_arm_pose is None:
+            if not self.saved_r_arm_poses:
                 rospy.logerr('Target pose for right arm is None, cannot move.')
             else:
                 self.freeze_arm('r')
-                self.move_to_joints('r', self.saved_r_arm_pose, 2.0)
+                self.move_to_joints('r', self.saved_r_arm_poses, 2.0)
         else:
             if self.saved_l_arm_pose is None:
                 rospy.logerr('Target pose for left arm is None, cannot move.')
             else:
                 self.freeze_arm('l')
-                self.move_to_joints('l', self.saved_l_arm_pose, 2.0)
+                self.move_to_joints('l', self.saved_l_arm_pose, 1.0)
                 pass
 
+    def clear_poses(self):
+        rospy.loginfo('Clearing all saved poses!')
+        self.poses_count_label.setText('No Saved Poses')
+        self.saved_r_arm_poses = []
+        self.saved_l_arm_poses = []
 
     def move_to_joints(self, side_prefix, positions, time_to_joint):
         '''Moves the arm to the desired joints'''
-        velocities = [0] * len(positions)
         traj_goal = JointTrajectoryGoal()
         traj_goal.trajectory.header.stamp = (rospy.Time.now() + rospy.Duration(0.1))
-        traj_goal.trajectory.points.append(JointTrajectoryPoint(positions=positions,
-                            velocities=velocities, time_from_start=rospy.Duration(time_to_joint)))
+        time_move = time_to_joint
+        for pose in positions:
+            velocities = [0] * len(pose)
+            traj_goal.trajectory.points.append(JointTrajectoryPoint(positions=pose,
+                            velocities=velocities, time_from_start=rospy.Duration(time_move)))
+            time_move += time_move
 	
 	if (side_prefix == 'r'):
 	    traj_goal.trajectory.joint_names = self.r_joint_names
