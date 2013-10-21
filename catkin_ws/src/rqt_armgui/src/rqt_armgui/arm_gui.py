@@ -9,6 +9,7 @@ roslib.load_manifest('sensor_msgs')
 roslib.load_manifest('actionlib')
 
 from subprocess import call
+from collections import defaultdict
 import threading
 import rospy
 from qt_gui.plugin import Plugin
@@ -58,8 +59,10 @@ class ArmGUI(Plugin):
         self.all_joint_names = []
         self.all_joint_poses = []
 
-        self.saved_r_arm_poses = []
-        self.saved_l_arm_poses = []
+        # saving our poses
+        self.saved_r_arm_poses = defaultdict(lambda: list())
+        self.saved_l_arm_poses = defaultdict(lambda: list())
+        self.saved_pose_sets = set()
 
         self.lock = threading.Lock()
         rospy.Subscriber('joint_states', JointState, self.joint_states_cb)
@@ -71,7 +74,7 @@ class ArmGUI(Plugin):
         rospy.loginfo('Waiting for a response from the trajectory action server for RIGHT arm...')
         self.r_traj_action_client.wait_for_server()
         
-	l_traj_controller_name = '/l_arm_controller/joint_trajectory_action'
+        l_traj_controller_name = '/l_arm_controller/joint_trajectory_action'
         self.l_traj_action_client = SimpleActionClient(l_traj_controller_name, JointTrajectoryAction)
         rospy.loginfo('Waiting for a response from the trajectory action server for LEFT arm...')
         self.l_traj_action_client.wait_for_server()
@@ -82,43 +85,47 @@ class ArmGUI(Plugin):
         large_box = QtGui.QVBoxLayout()
         
         button_box1 = QtGui.QHBoxLayout()
-        button_box1.addWidget(self.create_button('Relax right arm'))
-        button_box1.addWidget(self.create_button('Freeze right arm'))
-        button_box1.addWidget(self.create_button('Relax left arm'))
-        button_box1.addWidget(self.create_button('Freeze left arm'))
+        button_box1.addWidget(self.create_button('Relax arms'))
+        button_box1.addWidget(self.create_button('Freeze arms'))
         button_box1.addStretch(1)
         large_box.addLayout(button_box1)
         large_box.addItem(QtGui.QSpacerItem(100,20))
 
         button_box2 = QtGui.QHBoxLayout()
-        button_box2.addWidget(self.create_button('Save right arm pose'))
-        button_box2.addWidget(self.create_button('Save left arm pose'))
-        button_box2.addWidget(self.create_button('Move right arm to saved pose'))
-        button_box2.addWidget(self.create_button('Move left arm to saved pose'))
+        self.pose_set_text = QtGui.QLineEdit(self._widget)
+        button_box2.addWidget(self.pose_set_text)
+        button_box2.addWidget(self.create_button('Add to Pose Set'))
         button_box2.addStretch(1)
         large_box.addLayout(button_box2)
         large_box.addItem(QtGui.QSpacerItem(100,20))
 
-        state_box = QtGui.QHBoxLayout()
-        self.r_state_label = QtGui.QLabel('Saved right arm pose: None')
-        self.l_state_label = QtGui.QLabel('Saved left arm pose: None')
-        state_box.addWidget(self.r_state_label)
-        state_box.addItem(QtGui.QSpacerItem(50,20))
-        state_box.addWidget(self.l_state_label)
-        state_box.addWidget(self.create_button('Clear Poses'))
-        state_box.addStretch(1)
-        large_box.addLayout(state_box)
+        button_box3 = QtGui.QHBoxLayout()
+        self.pose_selector = QtGui.QComboBox()
+        self.pose_selector.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+        self.pose_selector.currentIndexChanged[str].connect(self.update_pose_set_length)
+        button_box3.addWidget(self.pose_selector)
+
+        self.pose_set_length_label = QtGui.QLabel()
+        button_box3.addWidget(self.pose_set_length_label)
+        self.update_pose_set_length()
+
+        button_box3.addWidget(self.create_button('Do Pose Set'))
+        button_box3.addItem(QtGui.QSpacerItem(50,20))
+        button_box3.addWidget(self.create_button('Delete Pose Set'))
+        button_box3.addStretch(1)
+        large_box.addLayout(button_box3)
+        large_box.addItem(QtGui.QSpacerItem(100,20))
 
         poses_box = QtGui.QVBoxLayout()
-        self.poses_count_label = QtGui.QLabel('No Saved Poses')
-        poses_box.addWidget(self.poses_count_label)
+        self.status_message_label = QtGui.QLabel('No Saved Poses')
+        poses_box.addWidget(self.status_message_label)
         large_box.addLayout(poses_box)
 
         large_box.addStretch(1)
         self._widget.setObjectName('ArmGUI')
         self._widget.setLayout(large_box)
         context.add_widget(self._widget)
-	rospy.loginfo('GUI initialization complete.')
+        rospy.loginfo('GUI initialization complete.')
         
         
 
@@ -131,71 +138,106 @@ class ArmGUI(Plugin):
     # self._widget.sender() to figure out where the event originated.
     def command_cb(self):
         button_name = self._widget.sender().text()
-        if (button_name == 'Relax right arm'):
+        if (button_name == 'Relax arms'):
             self.relax_arm('r')
-        elif (button_name == 'Freeze right arm'):
-            self.freeze_arm('r')
-        elif (button_name == 'Relax left arm'):
             self.relax_arm('l')
-        elif (button_name == 'Freeze left arm'):
+        elif (button_name == 'Freeze arms'):
+            self.freeze_arm('r')
             self.freeze_arm('l')
-        elif (button_name == 'Save right arm pose'):
-            self.save_pose('r')
-        elif (button_name == 'Save left arm pose'):
-            self.save_pose('l')
-        elif (button_name == 'Move right arm to saved pose'):
-            self.move_arm('r')
-        elif (button_name == 'Move left arm to saved pose'):
-            self.move_arm('l')
-        elif (button_name == 'Clear Poses'):
-            self.clear_poses
+        elif (button_name == 'Add to Pose Set'):
+            self.save_pose()
+        elif (button_name == 'Do Pose Set'):
+            self.move_arm()
+        elif (button_name == 'Delete Pose Set'):
+            self.delete_pose()
+        self.update_pose_set_length()
 
-    def save_pose(self, side_prefix):
-        if (side_prefix == 'r'):
-            self.saved_r_arm_poses.append(self.get_joint_state('r'))
-            self.r_state_label.setText('Saved right arm pose!')
-        else:
-            self.saved_l_arm_poses.append(self.get_joint_state('l'))
-            self.l_state_label.setText('Saved left arm pose!')
 
-    def move_arm(self, side_prefix):
-        if (side_prefix == 'r'):
-            if not self.saved_r_arm_poses:
-                rospy.logerr('Target pose for right arm is None, cannot move.')
-            else:
-                self.freeze_arm('r')
-                self.move_to_joints('r', self.saved_r_arm_poses, 2.0)
-        else:
-            if self.saved_l_arm_pose is None:
-                rospy.logerr('Target pose for left arm is None, cannot move.')
-            else:
-                self.freeze_arm('l')
-                self.move_to_joints('l', self.saved_l_arm_pose, 1.0)
-                pass
+    def save_pose(self):
+        pose_set = self.pose_set_text.text()
+        if len(pose_set) is 0 or pose_set is None:
+            self.status_message_label.setText("Invalid pose name")
+            return
 
-    def clear_poses(self):
-        rospy.loginfo('Clearing all saved poses!')
-        self.poses_count_label.setText('No Saved Poses')
-        self.saved_r_arm_poses = []
-        self.saved_l_arm_poses = []
+        # if not already saved, make a new pose set
+        if pose_set not in self.saved_pose_sets:
+            self.pose_selector.addItem(pose_set)
+            self.saved_pose_sets.add(pose_set)
+        # auto select the saved pose
+        index = self.pose_selector.findText(pose_set)
+        self.pose_selector.setCurrentIndex(index)
+
+
+        r_joint_state = self.get_joint_state('r')
+        l_joint_state = self.get_joint_state('l')
+
+        self.saved_r_arm_poses[pose_set].append(r_joint_state)
+        self.saved_l_arm_poses[pose_set].append(l_joint_state)
+
+        self.saved_pose_sets.add(pose_set)
+
+        self.status_message_label.setText('Pose saved!')
+
+
+    def update_pose_set_length(self):
+        pose_set = self.pose_selector.currentText()
+        text = "(%d)" % len(self.saved_r_arm_poses[pose_set])
+        self.pose_set_length_label.setText(text)
+
+
+    def move_arm(self):
+        pose_set = self.pose_selector.currentText()
+        
+        if not pose_set in self.saved_pose_sets:
+            rospy.logerr("Target pose set does not exist, I cannot move my little arms!")
+            self.status_message_label.setText("No pose set")
+            return
+        
+        if pose_set in self.saved_r_arm_poses:
+            self.freeze_arm('r')
+            self.move_to_joints('r', self.saved_r_arm_poses[pose_set], 3.0)
+
+        if pose_set in self.saved_l_arm_poses:
+            self.freeze_arm('l')
+            self.move_to_joints('l', self.saved_l_arm_poses[pose_set], 3.0)
+
+        self.status_message_label.setText('Pose executing!')
+
+    def delete_pose(self):
+        pose_set = self.pose_selector.currentText()
+        rospy.loginfo('Clearing pose set %s' % pose_set)
+
+        # removing from the select box
+        pose_set_len = len(self.saved_r_arm_poses[pose_set])
+        index = self.pose_selector.findText(pose_set)
+        self.pose_selector.removeItem(index)
+
+        # removing from the pose set maps
+        self.saved_r_arm_poses.pop(pose_set, None)
+        self.saved_l_arm_poses.pop(pose_set, None)
+        self.saved_pose_sets.remove(pose_set)
+
+        self.status_message_label.setText('Pose deleted!')
+
 
     def move_to_joints(self, side_prefix, positions, time_to_joint):
         '''Moves the arm to the desired joints'''
         traj_goal = JointTrajectoryGoal()
         traj_goal.trajectory.header.stamp = (rospy.Time.now() + rospy.Duration(0.1))
         time_move = time_to_joint
+        print "using following positions %s" % positions
         for pose in positions:
             velocities = [0] * len(pose)
             traj_goal.trajectory.points.append(JointTrajectoryPoint(positions=pose,
                             velocities=velocities, time_from_start=rospy.Duration(time_move)))
-            time_move += time_move
+            time_move += time_to_joint
 	
-	if (side_prefix == 'r'):
-	    traj_goal.trajectory.joint_names = self.r_joint_names
-	    self.r_traj_action_client.send_goal(traj_goal)
-	else:
-	    traj_goal.trajectory.joint_names = self.l_joint_names
-	    self.l_traj_action_client.send_goal(traj_goal)
+        if (side_prefix == 'r'):
+            traj_goal.trajectory.joint_names = self.r_joint_names
+            self.r_traj_action_client.send_goal(traj_goal)
+        else:
+            traj_goal.trajectory.joint_names = self.l_joint_names
+            self.l_traj_action_client.send_goal(traj_goal)
 
     def relax_arm(self, side_prefix):
         controller_name = side_prefix + '_arm_controller'
@@ -225,7 +267,7 @@ class ArmGUI(Plugin):
         self.lock.release()
 
     def joint_sig_cb(self, msg):
-	pass
+        pass
 
     def get_joint_state(self, side_prefix):
         '''Returns position for arm joints on the requested side (r/l)'''
