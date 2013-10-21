@@ -195,11 +195,11 @@ class ArmGUI(Plugin):
         
         if pose_set in self.saved_r_arm_poses:
             self.freeze_arm('r')
-            self.move_to_joints('r', self.saved_r_arm_poses[pose_set], 3.0)
+            self.move_to_joints('r', self.saved_r_arm_poses[pose_set], 1.0)
 
         if pose_set in self.saved_l_arm_poses:
             self.freeze_arm('l')
-            self.move_to_joints('l', self.saved_l_arm_poses[pose_set], 3.0)
+            self.move_to_joints('l', self.saved_l_arm_poses[pose_set], 1.0)
 
         self.status_message_label.setText('Pose executing!')
 
