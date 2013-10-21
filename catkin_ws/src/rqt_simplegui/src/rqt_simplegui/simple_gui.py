@@ -193,20 +193,20 @@ class SimpleGUI(Plugin):
         arm_l_control_grid = QtGui.QGridLayout()
         arm_r_control_grid = QtGui.QGridLayout()
 
-        for i in range(1, 4):
-            slider = QtGui.QSlider(QtCore.Qt.Vertical, self._widget)
-            slider.setFocusPolicy(QtCore.Qt.NoFocus)
-            slider.setGeometry(30, 40, 30, 100)
-            arm_l_control_grid.addWidget(slider, 0, i-1)
-            arm_l_control_grid.addWidget(QtGui.QLabel(str(i)), 1, i-1)
+        #for i in range(1, 4):
+         #   slider = QtGui.QSlider(QtCore.Qt.Vertical, self._widget)
+          #  slider.setFocusPolicy(QtCore.Qt.NoFocus)
+           # slider.setGeometry(30, 40, 30, 100)
+            #arm_l_control_grid.addWidget(slider, 0, i-1)
+            #arm_l_control_grid.addWidget(QtGui.QLabel(str(i)), 1, i-1)
 
 
-        for i in range(1, 4):
-            slider = QtGui.QSlider(QtCore.Qt.Vertical, self._widget)
-            slider.setFocusPolicy(QtCore.Qt.NoFocus)
-            slider.setGeometry(30, 40, 30, 100)
-            arm_r_control_grid.addWidget(slider, 0, i-1)
-            arm_r_control_grid.addWidget(QtGui.QLabel(str(i)), 1, i-1)
+        #for i in range(1, 4):
+         #   slider = QtGui.QSlider(QtCore.Qt.Vertical, self._widget)
+          #  slider.setFocusPolicy(QtCore.Qt.NoFocus)
+           # slider.setGeometry(30, 40, 30, 100)
+            #arm_r_control_grid.addWidget(slider, 0, i-1)
+            #arm_r_control_grid.addWidget(QtGui.QLabel(str(i)), 1, i-1)
 
         arm_l_controls.addLayout(arm_l_control_grid)
         arm_r_controls.addLayout(arm_r_control_grid)
@@ -214,7 +214,7 @@ class SimpleGUI(Plugin):
         arm_controls.addLayout(arm_l_controls)
         arm_controls.addLayout(arm_r_controls)
       
-        large_box.addLayout(arm_controls)
+        # large_box.addLayout(arm_controls)
 
         # SET EVERYTHING
         QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
