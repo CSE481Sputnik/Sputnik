@@ -195,11 +195,11 @@ class ArmGUI(Plugin):
         
         if pose_set in self.saved_r_arm_poses:
             self.freeze_arm('r')
-            self.move_to_joints('r', self.saved_r_arm_poses[pose_set], 1.0)
+            self.move_to_joints('r', self.saved_r_arm_poses[pose_set], 2.0)
 
         if pose_set in self.saved_l_arm_poses:
             self.freeze_arm('l')
-            self.move_to_joints('l', self.saved_l_arm_poses[pose_set], 1.0)
+            self.move_to_joints('l', self.saved_l_arm_poses[pose_set], 2.0)
 
         self.status_message_label.setText('Pose executing!')
 
@@ -224,7 +224,7 @@ class ArmGUI(Plugin):
         '''Moves the arm to the desired joints'''
         traj_goal = JointTrajectoryGoal()
         traj_goal.trajectory.header.stamp = (rospy.Time.now() + rospy.Duration(0.1))
-        time_move = time_to_joint
+        time_move = time_to_joint + 5
         print "using following positions %s" % positions
         for pose in positions:
             velocities = [0] * len(pose)
