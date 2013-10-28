@@ -120,13 +120,25 @@ class GripperMarkers:
         text_pos.x = pose.position.x
         text_pos.y = pose.position.y
         text_pos.z = pose.position.z + 0.1
-        text = 'x=' + str(pose.position.x) + ' y=' + str(pose.position.y) + ' z=' + str(pose.position.z)
+        text = "x=%.3f y=%.3f z=%.3f" % (pose.position.x, pose.position.y, pose.position.z)
         menu_control.markers.append(Marker(type=Marker.TEXT_VIEW_FACING,
                                            id=0, scale=Vector3(0, 0, 0.03),
                                            text=text,
                                            color=ColorRGBA(0.0, 0.0, 0.0, 0.5),
                                            header=Header(frame_id=frame_id),
                                            pose=Pose(text_pos, Quaternion(0, 0, 0, 1))))
+        label_pos = Point()
+        label_pos.x = pose.position.x
+        label_pos.y = pose.position.y
+        label_pos.z = pose.position.z
+        label = "{} arm".format(self.side_prefix)
+        menu_control.markers.append(Marker(type=Marker.TEXT_VIEW_FACING,
+                                           id=0, scale=Vector3(0, 0, 0.03),
+                                           text=label,
+                                           color=ColorRGBA(0.0, 0.0, 0.0, 0.9),
+                                           header=Header(frame_id=frame_id),
+                                           pose=Pose(label_pos, Quaternion(0, 0, 0, 1))))
+
         int_marker = InteractiveMarker()
         int_marker.name = 'ik_target_marker'
         int_marker.header.frame_id = frame_id
@@ -159,8 +171,8 @@ class GripperMarkers:
         mesh3.mesh_resource = ('package://pr2_description/meshes/gripper_v0/l_finger_tip.dae')
         mesh3.pose = GripperMarkers.get_pose_from_transform(t_distal)
         quat = tf.transformations.quaternion_multiply(
-        tf.transformations.quaternion_from_euler(numpy.pi, 0, 0),
-        tf.transformations.quaternion_from_euler(0, 0, angle))
+            tf.transformations.quaternion_from_euler(numpy.pi, 0, 0),
+            tf.transformations.quaternion_from_euler(0, 0, angle))
         transform1 = tf.transformations.quaternion_matrix(quat)
         transform1[:3, 3] = [0.07691 - GripperMarkers._offset, -0.01, 0]
         transform2 = tf.transformations.euler_matrix(0, 0, -angle)
