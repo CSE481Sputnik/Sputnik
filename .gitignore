@@ -1,5 +1,8 @@
 *.py[cod~]
 
+# Vim temp files
+*.swp
+
 # ROS stuff
 catkin_ws/build/
 catkin_ws/devel/
