@@ -1,7 +1,7 @@
 *.py[cod~]
 
 # Vim temp files
-*.swp
+*.sw[po]
 
 # ROS stuff
 catkin_ws/build/

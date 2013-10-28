@@ -27,7 +27,7 @@ from control_msgs.msg import JointTrajectoryAction
 
 class GripperMarkers:
 
-    _offset = 0.09
+    _offset = 0.00
     def __init__(self, side_prefix):
         self._ik_service = IK(side_prefix)
 
@@ -58,11 +58,11 @@ class GripperMarkers:
 
 	
 	self.side_prefix = side_prefix
-        self._im_server = InteractiveMarkerServer('ik_request_markers')
+        self._im_server = InteractiveMarkerServer("ik_request_markers_{}".format(side_prefix))
 	self._tf_listener = TransformListener()
         self._menu_handler = MenuHandler()
 
-        self._menu_handler.insert('Move arm here', callback=self.move_to_pose_cb)
+        self._menu_handler.insert("Move {} arm here".format(side_prefix), callback=self.move_to_pose_cb)
 
         self.is_control_visible = False
         self.ee_pose = self.get_ee_pose()
@@ -120,7 +120,7 @@ class GripperMarkers:
         text_pos.x = pose.position.x
         text_pos.y = pose.position.y
         text_pos.z = pose.position.z + 0.1
-        text = 'x=' + str(pose.position.x) + ' y=' + str(pose.position.y) + ' x=' + str(pose.position.z)
+        text = 'x=' + str(pose.position.x) + ' y=' + str(pose.position.y) + ' z=' + str(pose.position.z)
         menu_control.markers.append(Marker(type=Marker.TEXT_VIEW_FACING,
                                            id=0, scale=Vector3(0, 0, 0.03),
                                            text=text,
@@ -249,18 +249,15 @@ class GripperMarkers:
         if (side_prefix == 'r'):
             traj_goal.trajectory.joint_names = self.r_joint_names
             self.r_traj_action_client.send_goal(traj_goal)
-            self.r_traj_action_client.wait_for_result(rospy.Duration(10.0))
-            print self.r_traj_action_client.get_state()
         else:
             traj_goal.trajectory.joint_names = self.l_joint_names
             self.l_traj_action_client.send_goal(traj_goal)
-            self.l_traj_action_client.wait_for_result(rospy.Duration(10.0))
-            print self.l_traj_action_client.get_state()
 
 
 if __name__=='__main__':
     rospy.init_node('ik_target_marker_server')
     gm = GripperMarkers('r')
+    gm = GripperMarkers('l')
     rospy.spin()
 
 

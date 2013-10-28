@@ -10,6 +10,8 @@ roslib.load_manifest('actionlib')
 
 from subprocess import call
 from collections import defaultdict
+from functools import partial
+import pprint
 import threading
 import rospy
 from qt_gui.plugin import Plugin
@@ -32,6 +34,7 @@ class ArmGUI(Plugin):
         super(ArmGUI, self).__init__(context)
         self.setObjectName('ArmGUI')
         self._widget = QWidget()
+        print "init"
         
         # Action/service/message clients or servers
         
@@ -60,8 +63,8 @@ class ArmGUI(Plugin):
         self.all_joint_poses = []
 
         # saving our poses
-        self.saved_r_arm_poses = defaultdict(lambda: list())
-        self.saved_l_arm_poses = defaultdict(lambda: list())
+        self.saved_r_arm_poses = defaultdict(partial(list))
+        self.saved_l_arm_poses = defaultdict(partial(list))
         self.saved_pose_sets = set()
 
         self.lock = threading.Lock()
@@ -305,11 +308,20 @@ class ArmGUI(Plugin):
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO save intrinsic configuration, usually using:
-        # instance_settings.set_value(k, v)
-        pass
+        instance_settings.set_value("r_arm_poses", self.saved_r_arm_poses)
+        instance_settings.set_value("l_arm_poses", self.saved_l_arm_poses)
 
     def restore_settings(self, plugin_settings, instance_settings):
         # TODO restore intrinsic configuration, usually using:
-        # v = instance_settings.value(k)
-        pass
+        r_arm_poses = instance_settings.value("r_arm_poses")
+        if not r_arm_poses is None:
+            self.saved_r_arm_poses = r_arm_poses
+            for pose in self.saved_r_arm_poses.keys():
+                if not pose is None and pose != "":
+                    self.pose_selector.addItem(pose)
+                    self.saved_pose_sets.add(pose)
+
+        l_arm_poses = instance_settings.value("l_arm_poses")
+        if not l_arm_poses is None:
+            self.saved_l_arm_poses = l_arm_poses
 
