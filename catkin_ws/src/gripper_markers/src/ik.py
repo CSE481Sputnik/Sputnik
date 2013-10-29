@@ -65,8 +65,9 @@ class IK:
             else:
                 rospy.logwarn('Could not find IK solution.')
                 return None
-        except rospy.ServiceException:
+        except rospy.ServiceException as e:
             rospy.logerr('Exception while getting the IK solution.')
+            rospy.logerr(str(e))
             return None
 
         rollover = array((array(joints) - array(seed)) / pi, int)

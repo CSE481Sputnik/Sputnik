@@ -35,7 +35,7 @@ class ArmGUI(Plugin):
         self.setObjectName('ArmGUI')
         self._widget = QWidget()
         print "init"
-        
+ 
         # Action/service/message clients or servers
         
         switch_srv_name = 'pr2_controller_manager/switch_controller'
@@ -85,6 +85,9 @@ class ArmGUI(Plugin):
         QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
         self.joint_sig.connect(self.joint_sig_cb)
         
+        # controls time between poses
+        self.time_between_poses = 2.0
+
         large_box = QtGui.QVBoxLayout()
         
         button_box1 = QtGui.QHBoxLayout()
@@ -101,6 +104,20 @@ class ArmGUI(Plugin):
         button_box2.addStretch(1)
         large_box.addLayout(button_box2)
         large_box.addItem(QtGui.QSpacerItem(100,20))
+
+        # box with a slider controlling speed robot moves to pose with
+        speed_box = QtGui.QHBoxLayout()
+        speed_label = QtGui.QLabel('Pose speed: ')
+        speed_box.addWidget(speed_label)
+        
+	sldr = QtGui.QSlider(QtCore.Qt.Horizontal)
+        sldr.setSliderPosition(50)
+        speed_box.addWidget(sldr)
+	#sldr.setGeometry(50, 50, 130, 30);
+        sldr.valueChanged[int].connect(self.set_pose_speed)
+
+        speed_box.addStretch(1)
+        large_box.addLayout(speed_box)
 
         button_box3 = QtGui.QHBoxLayout()
         self.pose_selector = QtGui.QComboBox()
@@ -129,8 +146,15 @@ class ArmGUI(Plugin):
         self._widget.setLayout(large_box)
         context.add_widget(self._widget)
         rospy.loginfo('GUI initialization complete.')
-        
-        
+    
+    # currently maps from a quarter second between poses to ~3.5 seconds;
+    # pos comes in as the slider value which ranges from 0 to 100. it
+    # seems like even with the delay set to 0, there are automatic
+    # constraints, but to be safe the quarter second is added. there also
+    # seem to be poses that are intrinsically hard for the robot to move 
+    # between, causing slow movement even with a low delay set.
+    def set_pose_speed(self, pos):
+        self.time_between_poses = (100 - pos) / 30 + .25
 
     def create_button(self, name):
         btn = QtGui.QPushButton(name, self._widget)
@@ -198,11 +222,11 @@ class ArmGUI(Plugin):
         
         if pose_set in self.saved_r_arm_poses:
             self.freeze_arm('r')
-            self.move_to_joints('r', self.saved_r_arm_poses[pose_set], 2.0)
+            self.move_to_joints('r', self.saved_r_arm_poses[pose_set], self.time_between_poses)
 
         if pose_set in self.saved_l_arm_poses:
             self.freeze_arm('l')
-            self.move_to_joints('l', self.saved_l_arm_poses[pose_set], 2.0)
+            self.move_to_joints('l', self.saved_l_arm_poses[pose_set], self.time_between_poses)
 
         self.status_message_label.setText('Pose executing!')
 
@@ -222,12 +246,13 @@ class ArmGUI(Plugin):
 
         self.status_message_label.setText('Pose deleted!')
 
-
+    # unsure if the time_to_joint input is still necessary
+    # with self.time_between_poses
     def move_to_joints(self, side_prefix, positions, time_to_joint):
         '''Moves the arm to the desired joints'''
         traj_goal = JointTrajectoryGoal()
         traj_goal.trajectory.header.stamp = (rospy.Time.now() + rospy.Duration(0.1))
-        time_move = time_to_joint + 5
+        time_move = time_to_joint
         print "using following positions %s" % positions
         for pose in positions:
             velocities = [0] * len(pose)
