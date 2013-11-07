@@ -4,8 +4,8 @@
 *.sw[po]
 
 # ROS stuff
-catkin_ws/build/
-catkin_ws/devel/
+build/
+devel/
 
 # C extensions
 *.so
