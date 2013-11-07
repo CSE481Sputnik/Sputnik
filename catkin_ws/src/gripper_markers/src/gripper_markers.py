@@ -22,12 +22,13 @@ from actionlib import SimpleActionClient
 from trajectory_msgs.msg import JointTrajectoryPoint
 from control_msgs.msg import JointTrajectoryGoal
 from control_msgs.msg import JointTrajectoryAction
+from ar_track_alvar.msg import AlvarMarkers
 
 
 
 class GripperMarkers:
 
-    _offset = 0.00
+    _offset = 0.09
     def __init__(self, side_prefix):
         self._ik_service = IK(side_prefix)
 
@@ -56,6 +57,7 @@ class GripperMarkers:
                               'l_wrist_flex_joint',
                               'l_wrist_roll_joint']
 
+        rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.marker_cb)
 	
 	self.side_prefix = side_prefix
         self._im_server = InteractiveMarkerServer("ik_request_markers_{}".format(side_prefix))
@@ -71,8 +73,8 @@ class GripperMarkers:
         self._im_server.applyChanges()
 
     def get_ee_pose(self):
-	from_frame = 'base_link'
-	to_frame = self.side_prefix + '_wrist_roll_link'
+	from_frame = '/base_link'
+	to_frame = '/' + self.side_prefix + '_wrist_roll_link'
 	try:
 	    t = self._tf_listener.getLatestCommonTime(from_frame, to_frame)
 	    (pos, rot) = self._tf_listener.lookupTransform(from_frame, to_frame, t)
@@ -88,7 +90,8 @@ class GripperMarkers:
 			Quaternion(rot[0], rot[1], rot[2], rot[3]))
 
     def move_to_pose_cb(self, dummy):
-        ik_sol = self._ik_service.get_ik_for_ee(self.ee_pose)
+        target_pose = GripperMarkers._offset_pose(self.ee_pose)
+        ik_sol = self._ik_service.get_ik_for_ee(target_pose)
         self.move_to_joints(self.side_prefix, [ik_sol], 1.0)
 
     def marker_clicked_cb(self, feedback):
@@ -106,6 +109,16 @@ class GripperMarkers:
                 self.is_control_visible = True
         else:
             rospy.loginfo('Unhandled event: ' + str(feedback.event_type))
+
+    def marker_cb(self, pose_markers):
+        rospy.loginfo('AR Marker Pose updating')
+        transform = GripperMarkers.get_matrix_from_pose(pose_markers.markers[0].pose.pose)
+        offset_array = [0, 0, .03]
+        offset_transform = tf.transformations.translation_matrix(offset_array)
+        hand_transform = tf.transformations.concatenate_matrices(transform,
+                                                             offset_transform)
+        self.ee_pose = GripperMarkers.get_pose_from_transform(hand_transform)
+        self.update_viz() 
 
     def update_viz(self):
         
@@ -194,6 +207,24 @@ class GripperMarkers:
         return control
 
     @staticmethod
+    def _offset_pose(pose):
+        transform = GripperMarkers.get_matrix_from_pose(pose)
+        offset_array = [-GripperMarkers._offset, 0, 0]
+        offset_transform = tf.transformations.translation_matrix(offset_array)
+        hand_transform = tf.transformations.concatenate_matrices(transform,
+                                                             offset_transform)
+        return GripperMarkers.get_pose_from_transform(hand_transform)
+
+    @staticmethod
+    def get_matrix_from_pose(pose):
+        rotation = [pose.orientation.x, pose.orientation.y,
+                pose.orientation.z, pose.orientation.w]
+        transformation = tf.transformations.quaternion_matrix(rotation)
+        position = [pose.position.x, pose.position.y, pose.position.z]
+        transformation[:3, 3] = position
+        return transformation
+
+    @staticmethod
     def get_pose_from_transform(transform):
 	pos = transform[:3,3].copy()
 	rot = tf.transformations.quaternion_from_matrix(transform)
@@ -208,7 +239,8 @@ class GripperMarkers:
         mesh.scale.y = 1.0
         mesh.scale.z = 1.0
 
-        ik_sol = self._ik_service.get_ik_for_ee(self.ee_pose)
+        target_pose = GripperMarkers._offset_pose(self.ee_pose)
+        ik_sol = self._ik_service.get_ik_for_ee(target_pose)
         if ik_sol == None:
             mesh.color = ColorRGBA(1.0, 0.0, 0.0, 0.6)
         else:
