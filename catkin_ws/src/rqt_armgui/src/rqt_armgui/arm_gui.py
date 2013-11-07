@@ -109,13 +109,15 @@ class ArmGUI(Plugin):
         speed_box = QtGui.QHBoxLayout()
         speed_label = QtGui.QLabel('Pose speed: ')
         speed_box.addWidget(speed_label)
+        speed_box.addWidget(QtGui.QLabel('Slow'))
         
 	sldr = QtGui.QSlider(QtCore.Qt.Horizontal)
         sldr.setSliderPosition(50)
         speed_box.addWidget(sldr)
 	#sldr.setGeometry(50, 50, 130, 30);
         sldr.valueChanged[int].connect(self.set_pose_speed)
-
+        
+        speed_box.addWidget(QtGui.QLabel('Fast'))
         speed_box.addStretch(1)
         large_box.addLayout(speed_box)
 
