@@ -25,6 +25,7 @@ from trajectory_msgs.msg import JointTrajectoryPoint
 from control_msgs.msg import JointTrajectoryGoal
 from control_msgs.msg import JointTrajectoryAction
 from ar_track_alvar.msg import AlvarMarkers
+from head_object_tracking import HeadObjectTracking
 
 class GripperMarkers:
 
@@ -160,8 +161,8 @@ class GripperMarkers:
         mesh3.mesh_resource = ('package://pr2_description/meshes/gripper_v0/l_finger_tip.dae')
         mesh3.pose = GripperMarkers.get_pose_from_transform(t_distal)
         quat = tf.transformations.quaternion_multiply(
-        tf.transformations.quaternion_from_euler(numpy.pi, 0, 0),
-        tf.transformations.quaternion_from_euler(0, 0, angle))
+            tf.transformations.quaternion_from_euler(numpy.pi, 0, 0),
+            tf.transformations.quaternion_from_euler(0, 0, angle))
         transform1 = tf.transformations.quaternion_matrix(quat)
         transform1[:3, 3] = [0.07691 - offset, -0.01, 0]
         transform2 = tf.transformations.euler_matrix(0, 0, -angle)

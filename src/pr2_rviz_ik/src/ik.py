@@ -101,7 +101,7 @@ class IK:
         
         try:
             rospy.loginfo('Requesting IK.')
-            pprint.pprint(self.ik_request)
+            #pprint.pprint(self.ik_request)
             response = self.ik_srv(self.ik_request)
             if(response.error_code.val == response.error_code.SUCCESS):
                 joints = response.solution.joint_state.position
