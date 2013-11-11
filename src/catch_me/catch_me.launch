@@ -1,0 +1,12 @@
+<launch>
+	<node pkg="catch_me" 
+		name="destination_publisher" 
+		type="destination_publisher.py" />
+	<node pkg="catch_me" 
+		name="destination_goal_publisher" 
+		type="destination_goal_publisher.py" /> 
+	<node pkg="map_server" 
+		name="map_server" 
+		type="map_server" 
+		args="/home/team7/ROS/catkin_ws/src/mapping/basement_map.yaml" />
+</launch>
