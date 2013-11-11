@@ -10,15 +10,24 @@ class DestinationPublisher:
   def __init__(self):
     rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.marker_cb)
     self.pub = rospy.Publisher('catch_me_destination_pub', Pose)
+    self._head_object_tracking = HeadObjectTracking()
     rospy.loginfo('Destination Publisher Started')
 
   def marker_cb(self, pose_markers):
     if len(pose_markers.markers) == 0:
       return
     rospy.loginfo('AR Marker Pose updating')
+
+
     pose = pose_markers.markers[0].pose.pose
+    
+    x_pos = pose.position.x
+    y_pos = pose.position.y
+    z_pos = pose.position.z
+    self._head_object_tracking.new_tracking_data(x_pos, y_pos, z_pos)
+
     transform = DestinationPublisher.get_matrix_from_pose(pose)
-    offset_array = [-.5, 0, 0]
+    offset_array = [0.0, 0.0, 0.0]
     offset_transform = tf.transformations.translation_matrix(offset_array)
     hand_transform = tf.transformations.concatenate_matrices(transform,
                                                              offset_transform)
