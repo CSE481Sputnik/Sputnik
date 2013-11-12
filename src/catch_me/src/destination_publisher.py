@@ -28,7 +28,7 @@ class DestinationPublisher:
   def marker_cb(self, pose_markers):
     if len(pose_markers.markers) == 0:
       return
-    if self.base_client.get_state == actionlib.SimpleGoalState.PENDING:
+    if self.base_client.get_state == actionlib.SimpleGoalState.PENDING or self.base_client.get_state == actionlib.SimpleGoalState.ACTIVE:
         return
     rospy.loginfo('AR Marker Pose updating')
 
@@ -50,6 +50,7 @@ class DestinationPublisher:
 
     rospy.loginfo('Sending new goal')
     self.base_client.send_goal(goal)
+    self.base_client.wait_for_result()
     rospy.loginfo(str(self.base_client.get_result()))
 
   @staticmethod
