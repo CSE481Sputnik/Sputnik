@@ -28,16 +28,19 @@ class DestinationPublisher:
   def marker_cb(self, pose_markers):
     if len(pose_markers.markers) == 0:
       return
-    if self.base_client.get_state == actionlib.SimpleGoalState.PENDING or self.base_client.get_state == actionlib.SimpleGoalState.ACTIVE:
-        return
-    rospy.loginfo('AR Marker Pose updating')
 
+    rospy.loginfo('AR Marker Pose updating')
     pose = pose_markers.markers[0].pose.pose
     pose_header = pose_markers.markers[0].header
     
     x_pos = pose.position.x
     y_pos = pose.position.y
     z_pos = pose.position.z
+    self._head_object_tracking.new_tracking_data(x_pos, y_pos, z_pos)
+
+    if self.base_client.get_state == actionlib.SimpleGoalState.PENDING or self.base_client.get_state == actionlib.SimpleGoalState.ACTIVE:
+      return
+
     pos_frame_id = pose_header.frame_id
     rospy.loginfo(str(pos_frame_id) + '\n' + str(x_pos) + ',' + str(y_pos) + ',' + str(z_pos))
 
