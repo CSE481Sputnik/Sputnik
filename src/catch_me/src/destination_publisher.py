@@ -1,39 +1,56 @@
 #!/usr/bin/env python
 
+import roslib
+roslib.load_manifest('simple_navigation_goals')
+
 import rospy
 import tf
-from geometry_msgs.msg import Pose, Point, Quaternion
+import actionlib
+from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
 from visualization_msgs.msg import Marker
 from ar_track_alvar.msg import AlvarMarkers
+from head_object_tracking import HeadObjectTracking
+from move_base_msgs.msg import MoveBaseAction, MoveBaseActionGoal, MoveBaseGoal
 
 class DestinationPublisher:
   def __init__(self):
     rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.marker_cb)
-    self.pub = rospy.Publisher('catch_me_destination_pub', Pose)
+    self.pub = rospy.Publisher('catch_me_destination_pub', PoseStamped)
+
+    rospy.loginfo('Waiting for move_base action to come up')
+    self.base_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+    self.base_client.wait_for_server()
+    rospy.loginfo('Connected to move_base action server')
+
     self._head_object_tracking = HeadObjectTracking()
     rospy.loginfo('Destination Publisher Started')
 
   def marker_cb(self, pose_markers):
     if len(pose_markers.markers) == 0:
       return
+    if self.base_client.get_state == actionlib.SimpleGoalState.PENDING:
+        return
     rospy.loginfo('AR Marker Pose updating')
 
-
     pose = pose_markers.markers[0].pose.pose
+    pose_header = pose_markers.markers[0].header
     
     x_pos = pose.position.x
     y_pos = pose.position.y
     z_pos = pose.position.z
-    self._head_object_tracking.new_tracking_data(x_pos, y_pos, z_pos)
+    pos_frame_id = pose_header.frame_id
+    rospy.loginfo(str(pos_frame_id) + '\n' + str(x_pos) + ',' + str(y_pos) + ',' + str(z_pos))
 
-    transform = DestinationPublisher.get_matrix_from_pose(pose)
-    offset_array = [0.0, 0.0, 0.0]
-    offset_transform = tf.transformations.translation_matrix(offset_array)
-    hand_transform = tf.transformations.concatenate_matrices(transform,
-                                                             offset_transform)
-    trans_pose = DestinationPublisher.get_pose_from_transform(hand_transform)
-    rospy.loginfo('Marker: \n' + str(pose) + ',\nDestination: \n' + str(trans_pose))
-    self.pub.publish(trans_pose)
+    goal = MoveBaseGoal()
+    goal.target_pose.header.frame_id = "base_link"
+    goal.target_pose.header.stamp = rospy.Time.now()
+    goal.target_pose.pose.position.x = x_pos - 0.8
+    goal.target_pose.pose.position.y = y_pos
+    goal.target_pose.pose.orientation.w = 1.0
+
+    rospy.loginfo('Sending new goal')
+    self.base_client.send_goal(goal)
+    rospy.loginfo(str(self.base_client.get_result()))
 
   @staticmethod
   def get_matrix_from_pose(pose):
