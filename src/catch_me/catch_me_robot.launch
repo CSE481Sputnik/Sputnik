@@ -1,7 +1,5 @@
 <launch>
-    <include file="$(find pr2_2dnav_slam)/pr2_2dnav.launch" />
-    <include file="$(find ar_track_alvar)/launch/kinect.launch" />
-    <include file="$(find ar_track_alvar)/launch/pr2_indiv.launch" />
+    <include file="$(find catch_me)/catch_me_robot_no_dest.launch" />
     <node pkg="catch_me" 
         name="destination_publisher" 
         type="destination_publisher.py" />
