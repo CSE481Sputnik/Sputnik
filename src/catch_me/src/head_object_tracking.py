@@ -14,6 +14,7 @@ from control_msgs.msg import PointHeadGoal
 from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point
+from ar_track_alvar.msg import AlvarMarkers
 
 class HeadObjectTracking():
 
@@ -24,8 +25,9 @@ class HeadObjectTracking():
 
         self.curr_tracking_point = Point(1, 0, 0.5)
         self.point_head(self.curr_tracking_point.x, self.curr_tracking_point.y, self.curr_tracking_point.z)
+        rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.new_tracking_data)
 
-    def new_tracking_data(self, data_x, data_y, data_z):
+    def new_tracking_data(self, pose_markers):
         """
         Adds a new tracking data point for the head.
 
@@ -33,13 +35,18 @@ class HeadObjectTracking():
         previous tracking data points.
         """
 
+        if len(pose_markers.markers) == 0:
+          return
+
+        pos = pose_markers.markers[0].pose.pose.position
+
         OLD_DATA_WEIGHT = .3
 
         # calculate the moving average of the x, y, z positions
         tracking_point = self.curr_tracking_point
-        avg_x = (self.curr_tracking_point.x * OLD_DATA_WEIGHT) + (data_x * (1 - OLD_DATA_WEIGHT))
-        avg_y = (self.curr_tracking_point.y * OLD_DATA_WEIGHT) + (data_y * (1 - OLD_DATA_WEIGHT))
-        avg_z = (self.curr_tracking_point.z * OLD_DATA_WEIGHT) + (data_z * (1 - OLD_DATA_WEIGHT))
+        avg_x = (self.curr_tracking_point.x * OLD_DATA_WEIGHT) + (pos.x * (1 - OLD_DATA_WEIGHT))
+        avg_y = (self.curr_tracking_point.y * OLD_DATA_WEIGHT) + (pos.y * (1 - OLD_DATA_WEIGHT))
+        avg_z = (self.curr_tracking_point.z * OLD_DATA_WEIGHT) + (pos.z * (1 - OLD_DATA_WEIGHT))
 
         # make a new averaged point to track and point the head there
         self.curr_tracking_point = Point(avg_x, avg_y, avg_z)
@@ -54,7 +61,14 @@ class HeadObjectTracking():
         head_goal.max_velocity = .3
         # The transform seems to aim high. Move it down a little...
         head_goal.target.point = Point(x, y, z - .4)
+
+        rospy.loginfo('Moving head to\n' + str(head_goal.target.point))
         
         self.head_client.send_goal(head_goal)
 #        if (self.head_client.get_state() != GoalStatus.SUCCEEDED):
 #            rospy.logwarn('Head action unsuccessful.')
+
+if __name__=='__main__':
+    rospy.init_node('catch_me_head_tracking_node')
+    head_tracking = HeadObjectTracking()
+    rospy.spin()

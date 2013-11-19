@@ -27,20 +27,21 @@ find_package(catkin REQUIRED COMPONENTS rospy tf geometry_msgs std_msgs visualiz
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
+add_service_files(
+  FILES
+  DestinationService.srv   
 #   Service1.srv
 #   Service2.srv
-# )
+)
 
 ## Generate added messages and services with any dependencies listed here
-#generate_messages(
-#  DEPENDENCIES
-#  std_msgs  # Or other packages containing msgs
-#  geometry_msgs
-#  visualization_msgs
-#  ar_track_alvar 
-#)
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+  geometry_msgs
+  visualization_msgs
+  ar_track_alvar 
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -53,9 +54,9 @@ find_package(catkin REQUIRED COMPONENTS rospy tf geometry_msgs std_msgs visualiz
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES catch_me
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
+  LIBRARIES catch_me
+  CATKIN_DEPENDS message_runtime
+  DEPENDS system_lib
 )
 
 ###########
