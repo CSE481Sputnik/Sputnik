@@ -13,17 +13,21 @@ from head_object_tracking import HeadObjectTracking
 from move_base_msgs.msg import MoveBaseAction, MoveBaseActionGoal, MoveBaseGoal
 
 class DestinationPublisher:
+  MIN_GOAL_TIME_MS = 1000
+
   def __init__(self):
     rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.marker_cb)
     self.pub = rospy.Publisher('catch_me_destination_pub', PoseStamped)
+
+    self._head_object_tracking = HeadObjectTracking()
+    rospy.loginfo('Destination Publisher Started')
+
+    self._last_move = rospy.Time.now()
 
     rospy.loginfo('Waiting for move_base action to come up')
     self.base_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
     self.base_client.wait_for_server()
     rospy.loginfo('Connected to move_base action server')
-
-    self._head_object_tracking = HeadObjectTracking()
-    rospy.loginfo('Destination Publisher Started')
 
   def marker_cb(self, pose_markers):
     if len(pose_markers.markers) == 0:
@@ -38,7 +42,7 @@ class DestinationPublisher:
     z_pos = pose.position.z
     self._head_object_tracking.new_tracking_data(x_pos, y_pos, z_pos)
 
-    if self.base_client.get_state == actionlib.SimpleGoalState.PENDING or self.base_client.get_state == actionlib.SimpleGoalState.ACTIVE:
+    if (self.base_client.get_state == actionlib.SimpleGoalState.PENDING or self.base_client.get_state == actionlib.SimpleGoalState.ACTIVE): # and rospy.Time.now() - self._last_move < MIN_GOAL_TIME:
       return
 
     pos_frame_id = pose_header.frame_id
@@ -52,9 +56,11 @@ class DestinationPublisher:
     goal.target_pose.pose.orientation.w = 1.0
 
     rospy.loginfo('Sending new goal')
+    # Cancel old goal if it exists.
+    #self.base_client.cancel_all_goals()
     self.base_client.send_goal(goal)
-    self.base_client.wait_for_result()
-    rospy.loginfo(str(self.base_client.get_result()))
+    #self.base_client.wait_for_result()
+    #rospy.loginfo(str(self.base_client.get_result()))
 
   @staticmethod
   def get_matrix_from_pose(pose):
