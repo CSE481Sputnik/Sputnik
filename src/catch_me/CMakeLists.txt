@@ -4,8 +4,8 @@ project(catch_me)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS rospy tf geometry_msgs std_msgs visualization_msgs ar_track_alvar message_generation)
-
+find_package(catkin REQUIRED COMPONENTS rospy tf geometry_msgs std_msgs visualization_msgs ar_track_alvar message_generation genmsg actionlib_msgs)
+add_action_files(DIRECTORY action FILES LocalSearch.action)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -37,6 +37,7 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+  actionlib_msgs
   std_msgs  # Or other packages containing msgs
   geometry_msgs
   visualization_msgs
