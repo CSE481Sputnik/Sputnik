@@ -35,22 +35,23 @@ class HeadObjectTracking():
         previous tracking data points.
         """
 
-        if len(pose_markers.markers) == 0:
-          return
+        for i in range(0, len(pose_markers.markers)):
+          marker = pose_markers.markers[i]
+          if marker.id == 1:
 
-        pos = pose_markers.markers[0].pose.pose.position
+            pos = marker.pose.pose.position
 
-        OLD_DATA_WEIGHT = .3
+            OLD_DATA_WEIGHT = .3
 
-        # calculate the moving average of the x, y, z positions
-        tracking_point = self.curr_tracking_point
-        avg_x = (self.curr_tracking_point.x * OLD_DATA_WEIGHT) + (pos.x * (1 - OLD_DATA_WEIGHT))
-        avg_y = (self.curr_tracking_point.y * OLD_DATA_WEIGHT) + (pos.y * (1 - OLD_DATA_WEIGHT))
-        avg_z = (self.curr_tracking_point.z * OLD_DATA_WEIGHT) + (pos.z * (1 - OLD_DATA_WEIGHT))
+            # calculate the moving average of the x, y, z positions
+            tracking_point = self.curr_tracking_point
+            avg_x = (self.curr_tracking_point.x * OLD_DATA_WEIGHT) + (pos.x * (1 - OLD_DATA_WEIGHT))
+            avg_y = (self.curr_tracking_point.y * OLD_DATA_WEIGHT) + (pos.y * (1 - OLD_DATA_WEIGHT))
+            avg_z = (self.curr_tracking_point.z * OLD_DATA_WEIGHT) + (pos.z * (1 - OLD_DATA_WEIGHT))
 
-        # make a new averaged point to track and point the head there
-        self.curr_tracking_point = Point(avg_x, avg_y, avg_z)
-        self.point_head(avg_x, avg_y, avg_z)
+            # make a new averaged point to track and point the head there
+            self.curr_tracking_point = Point(avg_x, avg_y, avg_z)
+            self.point_head(avg_x, avg_y, avg_z)
 
     def point_head(self, x, y, z):
         """
