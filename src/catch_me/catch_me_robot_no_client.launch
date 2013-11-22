@@ -2,4 +2,6 @@
     <include file="$(find pr2_2dnav_slam)/pr2_2dnav.launch" />
     <include file="$(find ar_track_alvar)/launch/kinect.launch" />
     <include file="$(find ar_track_alvar)/launch/pr2_indiv.launch" />
+    <param name="/move_base_node/global_costmap/inflation_radius" value=".4" />
+    <param name="/move_base_node/local_costmap/inflation_radius" value=".4" />
 </launch>
