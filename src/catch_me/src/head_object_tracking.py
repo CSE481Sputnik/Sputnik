@@ -14,7 +14,7 @@ from control_msgs.msg import PointHeadGoal
 from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point
-from ar_track_alvar.msg import AlvarMarkers
+from ar_track_alvar.msg import AlvarMarker
 
 class HeadObjectTracking():
 
@@ -25,33 +25,28 @@ class HeadObjectTracking():
 
         self.curr_tracking_point = Point(1, 0, 0.5)
         self.point_head(self.curr_tracking_point.x, self.curr_tracking_point.y, self.curr_tracking_point.z)
-        rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.new_tracking_data)
+        rospy.Subscriber('catch_me_destination_publisher', AlvarMarker, self.new_tracking_data)
 
-    def new_tracking_data(self, pose_markers):
+    def new_tracking_data(self, marker):
         """
         Adds a new tracking data point for the head.
 
         Points the head to a point taken as a moving average over some number of
         previous tracking data points.
         """
+        pos = marker.pose.pose.position
 
-        for i in range(0, len(pose_markers.markers)):
-          marker = pose_markers.markers[i]
-          if marker.id == 1:
+        OLD_DATA_WEIGHT = .3
 
-            pos = marker.pose.pose.position
+        # calculate the moving average of the x, y, z positions
+        tracking_point = self.curr_tracking_point
+        avg_x = (self.curr_tracking_point.x * OLD_DATA_WEIGHT) + (pos.x * (1 - OLD_DATA_WEIGHT))
+        avg_y = (self.curr_tracking_point.y * OLD_DATA_WEIGHT) + (pos.y * (1 - OLD_DATA_WEIGHT))
+        avg_z = (self.curr_tracking_point.z * OLD_DATA_WEIGHT) + (pos.z * (1 - OLD_DATA_WEIGHT))
 
-            OLD_DATA_WEIGHT = .3
-
-            # calculate the moving average of the x, y, z positions
-            tracking_point = self.curr_tracking_point
-            avg_x = (self.curr_tracking_point.x * OLD_DATA_WEIGHT) + (pos.x * (1 - OLD_DATA_WEIGHT))
-            avg_y = (self.curr_tracking_point.y * OLD_DATA_WEIGHT) + (pos.y * (1 - OLD_DATA_WEIGHT))
-            avg_z = (self.curr_tracking_point.z * OLD_DATA_WEIGHT) + (pos.z * (1 - OLD_DATA_WEIGHT))
-
-            # make a new averaged point to track and point the head there
-            self.curr_tracking_point = Point(avg_x, avg_y, avg_z)
-            self.point_head(avg_x, avg_y, avg_z)
+        # make a new averaged point to track and point the head there
+        self.curr_tracking_point = Point(avg_x, avg_y, avg_z)
+        self.point_head(avg_x, avg_y, avg_z)
 
     def point_head(self, x, y, z):
         """

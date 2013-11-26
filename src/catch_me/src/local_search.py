@@ -13,7 +13,7 @@ from actionlib_msgs.msg import GoalStatus
 from control_msgs.msg import PointHeadAction
 from control_msgs.msg import PointHeadGoal
 from geometry_msgs.msg import Point
-from ar_track_alvar.msg import AlvarMarkers
+from ar_track_alvar.msg import AlvarMarker
 from catch_me.msg import *
 
 
@@ -39,7 +39,7 @@ class LocalSearch():
     rospy.loginfo('%s: Action client for PointHeadAction running' % self._action_name)
 
     #initialize tracker mark
-    rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.marker_tracker)
+    rospy.Subscriber('catch_me_destination_publisher', AlvarMarker, self.marker_tracker)
     rospy.loginfo('%s: subscribed to AlvarMarkers' % self._action_name)
     
     #initialize this client
@@ -47,13 +47,10 @@ class LocalSearch():
     self._as.start()
     rospy.loginfo('%s: started' % self._action_name)
     
-  def marker_tracker(self, pose_markers):
-    if len(pose_markers.markers) == 0:
-      return
-    else:
-      if self.tracking_started:
-        self.found_marker = True  
-        rospy.loginfo('%s: marker found' % self._action_name)
+  def marker_tracker(self, marker):
+    if self.tracking_started:
+      self.found_marker = True  
+      rospy.loginfo('%s: marker found' % self._action_name)
     
   def run(self, goal):
     r = rospy.Rate(.5)
