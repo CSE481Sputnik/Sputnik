@@ -20,7 +20,7 @@ import math
 #TODO: import point stamped
 
 class LocalSearch():
-  VISUAL_FIELD_SIZE = 45
+  VISUAL_FIELD_SIZE = 40
   MIN_HEAD_ANGLE = -140
   MAX_HEAD_ANGLE = 140
 
@@ -62,10 +62,10 @@ class LocalSearch():
     # define a set of ranges to search
     search_ranges = [
       # first search in front of the robot
-      (0, self.MAX_HEAD_ANGLE/3),
-      (self.MAX_HEAD_ANGLE/3, self.MIN_HEAD_ANGLE/3),
+      (0, self.VISUAL_FIELD_SIZE),
+      (self.VISUAL_FIELD_SIZE, -self.VISUAL_FIELD_SIZE),
       # then search all directions
-      (self.MIN_HEAD_ANGLE/3, self.MAX_HEAD_ANGLE),
+      (-self.VISUAL_FIELD_SIZE, self.MAX_HEAD_ANGLE),
       (self.MAX_HEAD_ANGLE, self.MIN_HEAD_ANGLE),
       (self.MIN_HEAD_ANGLE, 0)
     ]
@@ -116,12 +116,12 @@ class LocalSearch():
   def lookat_goal(self, angle):
     head_goal = PointHeadGoal()
     head_goal.target.header.frame_id = '/torso_lift_link'
-    head_goal.max_velocity = 0.5
+    head_goal.max_velocity = 0.8
 
     angle_in_radians = math.radians(angle)
     x = math.cos(angle_in_radians) * 5
     y = math.sin(angle_in_radians) * 5
-    z = -0.3
+    z = -0.5
     
     head_goal.target.point = Point(x, y, z)
 
