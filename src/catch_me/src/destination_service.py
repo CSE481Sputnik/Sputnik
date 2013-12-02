@@ -5,12 +5,7 @@ roslib.load_manifest('simple_navigation_goals')
 
 import rospy
 import tf
-import actionlib
-from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
-from visualization_msgs.msg import Marker
-from ar_track_alvar.msg import AlvarMarkers
-from head_object_tracking import HeadObjectTracking
-from move_base_msgs.msg import MoveBaseAction, MoveBaseActionGoal, MoveBaseGoal
+from ar_track_alvar.msg import AlvarMarker
 from catch_me import srv
 
 class DestinationService:
@@ -18,21 +13,17 @@ class DestinationService:
     self.tf = tf.TransformListener()
     # I need a better default value...
     self.pose = None
-    rospy.Subscriber('ar_pose_marker', AlvarMarkers, self.marker_cb)
+    rospy.Subscriber('catch_me_destination_publisher', AlvarMarker, self.marker_cb)
     dest_serv = rospy.Service('catch_me_destination_service', srv.DestinationService, self.service_cb)
 
-  def marker_cb(self, pose_markers):
-    for i in range(0, len(pose_markers.markers)):
-      marker = pose_markers.markers[i]
-      #get marker 1
-      if marker.id == 1:
-        rospy.loginfo('AR Marker Pose updating')    
-        pose = marker.pose
-        pose.header = marker.header # Marker has the valid header
-        trans_pose = self.tf.transformPose('/map', pose)
-        trans_pose.pose.orientation.x = -trans_pose.pose.orientation.x
-        trans_pose.pose.orientation.y = -trans_pose.pose.orientation.y
-        self.pose = trans_pose
+  def marker_cb(self, marker):
+    rospy.loginfo('AR Marker Pose updating')    
+    pose = marker.pose
+    pose.header = marker.header # Marker has the valid header
+    trans_pose = self.tf.transformPose('/map', pose)
+    trans_pose.pose.orientation.x = -trans_pose.pose.orientation.x
+    trans_pose.pose.orientation.y = -trans_pose.pose.orientation.y
+    self.pose = trans_pose
 #        common_time = self.tf.getLatestCommonTime('/ar_marker_1', '/map')
 #        self.pose.header.stamp = common_time
 #        self.pose.header.frame_id = '/ar_marker_1'

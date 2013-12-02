@@ -7,6 +7,9 @@
           name="destination_service"
           type="destination_service.py" />
     <node pkg="catch_me"
+          name="destination_publisher"
+          type="destination_publisher.py" />
+    <node pkg="catch_me"
           name="local_search"
           type="local_search.py" />
 </launch>
