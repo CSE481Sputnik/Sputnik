@@ -14,7 +14,8 @@ from actionlib_msgs.msg import GoalStatus
 import copy 
 
 class CatchMe:
-  FOLLOW_DIST = .5
+  FOLLOW_DIST = 0.5
+  POSITION_THRESHOLD_DIST = 0.1
 
   def __init__(self):
     self._last_move = 0
@@ -41,6 +42,7 @@ class CatchMe:
 
   def follow_marker(self):
     pose_stamped = self.destination_service()
+    print pose_stamped
     
     if (pose_stamped is None or
           pose_stamped.pose.header.stamp.secs == 0 or
@@ -55,6 +57,7 @@ class CatchMe:
         goal = LocalSearchGoal(True)
         self.head_s_client.send_goal(goal)
 
+
     else:
       # New marker seen, try to move to it
       pos = pose_stamped.pose.pose.position
@@ -62,11 +65,17 @@ class CatchMe:
       pos_frame_id = pose_stamped.pose.header.frame_id
       rospy.loginfo(str(pos_frame_id) + '\n' + str(pos.x) + ',' + str(pos.y) + ',' + str(pos.z))
 
+      # Hunter: seems to be working, we can play around with value to find an optimal
+      if (self._last_pose is not None and
+            self.distanceBetween(pos, self._last_pose.pose.position) < self.POSITION_THRESHOLD_DIST):
+        rospy.loginfo('Marker found close to last goal sent, NOT sending new goal')
+
       if pose_stamped.pose != self._last_pose or self.base_client.get_state() != GoalStatus.SUCCEEDED:
         rospy.loginfo('Marker position updated.  Moving towards marker.')
         self._last_pose = copy.deepcopy(pose_stamped.pose)
 
         self.move_to_marker(pose_stamped)
+
 
     goal_status = self.base_client.get_state()
     if goal_status == GoalStatus.PENDING or goal_status == GoalStatus.ACTIVE:
@@ -103,6 +112,9 @@ class CatchMe:
     self.base_client.send_goal(goal)
     #self.base_client.wait_for_result()
     #rospy.loginfo(str(self.base_client.get_result()))
+
+  def distanceBetween(self, position1, position2):
+    return ((position1.x - position2.x) ** 2 + (position1.y - position2.y) ** 2) ** .5
 
 if __name__=='__main__':
     rospy.init_node('catch_me_node')
