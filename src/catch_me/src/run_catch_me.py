@@ -50,17 +50,19 @@ class CatchMe:
         goal = LocalSearchGoal(True)
         self.head_s_client.send_goal(goal)
     else:
+      rospy.loginfo('Moving towards marker')
       pos = pose_stamped.pose.pose.position
       orient = pose_stamped.pose.pose.orientation
       pos_frame_id = pose_stamped.pose.header.frame_id
       rospy.loginfo(str(pos_frame_id) + '\n' + str(pos.x) + ',' + str(pos.y) + ',' + str(pos.z))
 
-      if pose_stamped.pose == self._last_pose and self.base_client.get_state() == GoalStatus.SUCCEEDED:
+      if pose_stamped.pose == self._last_pose:
         rospy.loginfo('Marker position unchanged')
         if self.head_s_client.get_state() != GoalStatus.ACTIVE:
           goal = LocalSearchGoal(True)
           self.head_s_client.send_goal(goal)
-      else:
+
+      if pose_stamped.pose != self._last_pose or self.base_client.get_state() != GoalStatus.SUCCEEDED:
         self._last_pose = copy.deepcopy(pose_stamped.pose)
         pose = pose_stamped.pose
         pose.header.stamp = rospy.Time.now()

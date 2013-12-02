@@ -20,7 +20,7 @@ import math
 #TODO: import point stamped
 
 class LocalSearch():
-  VISUAL_FIELD_SIZE = 55
+  VISUAL_FIELD_SIZE = 45
   MIN_HEAD_ANGLE = -140
   MAX_HEAD_ANGLE = 140
 
@@ -62,22 +62,25 @@ class LocalSearch():
     # define a set of ranges to search
     search_ranges = [
       # first search in front of the robot
-      (0, MAX_HEAD_ANGLE/3),
-      (MAX_HEAD_ANGLE/3, MIN_HEAD_ANGLE/3),
+      (0, self.MAX_HEAD_ANGLE/3),
+      (self.MAX_HEAD_ANGLE/3, self.MIN_HEAD_ANGLE/3),
       # then search all directions
-      (MIN_HEAD_ANGLE/3, MIN_HEAD_ANGLE),
-      (MIN_HEAD_ANGLE, MAX_HEAD_ANGLE),
-      (MAX_HEAD_ANGLE, 0)
+      (self.MIN_HEAD_ANGLE/3, self.MAX_HEAD_ANGLE),
+      (self.MAX_HEAD_ANGLE, self.MIN_HEAD_ANGLE),
+      (self.MIN_HEAD_ANGLE, 0)
     ]
-    range_index = -1
+    range_index = 0
 
-    while not success and range_index < len(search_ranges):
+    #success = self.search_range(*(search_ranges[range_index]))
+    
+    while not success and range_index < len(search_ranges) - 1:
       if self._as.is_preempt_requested():
         rospy.loginfo('%s: Premepted' % self._action_name)
         self._as.set_preempted()
         break
       range_index = range_index + 1
       success = self.search_range(*(search_ranges[range_index]))
+    
 
     if success:
       rospy.loginfo('%s: Succeeded' % self._action_name)
@@ -87,18 +90,22 @@ class LocalSearch():
     self.tracking_started = False
     
   def search_range(self, start_angle, end_angle):
-    r = rospy.Rate(1)
-    for cur_angle in xrange(start_angle, end_angle, VISUAL_FIELD_SIZE):
+    rospy.loginfo("{}: searching range {} {}".format(self._action_name, start_angle, end_angle))
+    angle_tick = self.VISUAL_FIELD_SIZE if (start_angle < end_angle) else -self.VISUAL_FIELD_SIZE
+    for cur_angle in xrange(start_angle, end_angle, angle_tick):
       if self._as.is_preempt_requested():
 	return False
       
       head_goal = self.lookat_goal(cur_angle)
+      rospy.loginfo('%s: Head move goal for %s: %s produced' % (self._action_name, str(cur_angle), str(head_goal)))
       self.head_client.send_goal(head_goal)
       self.head_client.wait_for_result(rospy.Duration.from_sec(5.0))
       if (self.head_client.get_state() != GoalStatus.SUCCEEDED):
         rospy.logwarn('Head could not move to specified location')
         break
-      r.sleep()
+
+      # pause at each tick
+      rospy.sleep(0.3)
       if (self.found_marker):
         # found a marker!
         return True
@@ -114,11 +121,10 @@ class LocalSearch():
     angle_in_radians = math.radians(angle)
     x = math.cos(angle_in_radians) * 5
     y = math.sin(angle_in_radians) * 5
-    z = .4
+    z = -0.3
     
     head_goal.target.point = Point(x, y, z)
 
-    rospy.loginfo('%s: Head move goal for %s: %s produced' % (self._action_name, str(angle), str(head_goal)))
     return head_goal
 
 if __name__=='__main__':
