@@ -18,7 +18,7 @@ import copy
 
 class CatchMe:
   def __init__(self):
-    self.MIN_GOAL_TIME_S = 5
+    self.MIN_GOAL_TIME_S = 5 # try lower time?
     self._last_move = 0
     self._last_pose = None
 
@@ -43,19 +43,23 @@ class CatchMe:
 
   def move_to_marker(self):
     pose_stamped = self.destination_service()
+    print pose_stamped
     
     if pose_stamped is None or pose_stamped.pose.header.stamp.secs == 0:
       rospy.loginfo('No marker position found')
       if self.head_s_client.get_state() != GoalStatus.ACTIVE:
         goal = LocalSearchGoal(True)
         self.head_s_client.send_goal(goal)
+    # seems to be working, we can play around with value to find an optimal
+    elif self._last_pose is not None and self.distanceBetween(pose_stamped.pose.pose.position, self._last_pose.pose.position) < .2:
+      rospy.loginfo('marker found close to last goal sent, NOT sending new goal')
     else:
       pos = pose_stamped.pose.pose.position
       orient = pose_stamped.pose.pose.orientation
       pos_frame_id = pose_stamped.pose.header.frame_id
       rospy.loginfo(str(pos_frame_id) + '\n' + str(pos.x) + ',' + str(pos.y) + ',' + str(pos.z))
 
-      if pose_stamped.pose == self._last_pose and self.base_client.get_state() == GoalStatus.SUCCEEDED:
+      if pose_stamped.pose == self._last_pose and self.base_client.get_state() == actionlib.SimpleGoalState.DONE: # and pose_stamped.pose.header.stamp.secs + 2 + self.MIN_GOAL_TIME_S > rospy.Time.now().secs:
         rospy.loginfo('Marker position unchanged')
         if self.head_s_client.get_state() != GoalStatus.ACTIVE:
           goal = LocalSearchGoal(True)
@@ -63,8 +67,11 @@ class CatchMe:
       else:
         self._last_pose = copy.deepcopy(pose_stamped.pose)
         pose = pose_stamped.pose
+        common_time = self.tf.getLatestCommonTime('/ar_marker_1', '/map')
         pose.header.stamp = rospy.Time.now()
-
+        # Reduce to ~.1 seconds and add try/catch so it doesn't break completely if failed.
+        pose.header.stamp.secs = pose_stamped.pose.header.stamp.secs - 1
+	
         goal = MoveBaseGoal()
         goal.target_pose = pose
 
@@ -87,7 +94,11 @@ class CatchMe:
         #self.base_client.wait_for_result()
         #rospy.loginfo(str(self.base_client.get_result()))
 
+    # why do this rather than loop and sleep?
     threading.Timer(self.MIN_GOAL_TIME_S, self.move_to_marker).start()
+
+  def distanceBetween(self, position1, position2):
+    return ((position1.x - position2.x) ** 2 + (position1.y - position2.y) ** 2) ** .5
 
 if __name__=='__main__':
     rospy.init_node('catch_me_node')
