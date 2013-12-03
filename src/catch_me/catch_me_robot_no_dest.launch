@@ -12,4 +12,7 @@
     <node pkg="catch_me"
           name="local_search"
           type="local_search.py" />
+    <node pkg="catch_me"
+          name="base_rotate"
+          type="base_rotate.py" />
 </launch>

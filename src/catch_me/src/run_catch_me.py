@@ -38,11 +38,23 @@ class CatchMe:
     self.head_s_client.wait_for_server()
     rospy.loginfo('Head-search action client started')
 
+    rospy.loginfo('Starting base_rotate action')
+    self.base_r_client = actionlib.SimpleActionClient('base_rotate', BaseRotateAction)
+    self.base_r_client.wait_for_server()
+    rospy.loginfo('Base_rotate action client started')
+
     threading.Timer(0, self.follow_marker).start()
 
   def follow_marker(self):
     pose_stamped = self.destination_service()
     print pose_stamped
+
+    # If we can't find a path, spin to clear obstacles, else stop spinning
+    if self.base_client.get_state() == GoalStatus.PENDING:
+      goal = BaseRotateGoal()
+      self.base_r_client.send_goal(goal)
+    else:
+      self.base_r_client.cancel_goal()
     
     if (pose_stamped is None or
           pose_stamped.pose.header.stamp.secs == 0 or

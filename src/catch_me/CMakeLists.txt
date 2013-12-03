@@ -5,7 +5,7 @@ project(catch_me)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS rospy tf geometry_msgs std_msgs visualization_msgs ar_track_alvar message_generation genmsg actionlib_msgs)
-add_action_files(DIRECTORY action FILES LocalSearch.action)
+add_action_files(DIRECTORY action FILES LocalSearch.action BaseRotate.action)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
