@@ -22,6 +22,7 @@ class BaseRotate():
     rospy.loginfo('%s: started' % self._action_name)
     
   def run(self, goal):
+    rospy.loginfo('Rotating base')
     count = 0
     r = rospy.Rate(10)
     while count < 70:

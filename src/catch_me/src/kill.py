@@ -18,6 +18,8 @@ from control_msgs.msg import JointTrajectoryGoal, JointTrajectoryAction
 import math
 
 class Kill():
+  REFRESH_RATE = 20
+
   def __init__(self):
     self.r1 = [-1.2923559122018107, -0.24199198117104131, -1.6400091364915879, -1.5193418228083817, 182.36402145110227, -0.18075144121090148, -5.948327320167482]
     self.r2 = [-0.6795931033163289, -0.22651111024292614, -1.748569353944001, -0.7718906399352281, 182.36402145110227, -0.18075144121090148, -5.948327320167482]
@@ -99,7 +101,9 @@ class Kill():
     traj_goal_l.trajectory.points[0].positions = self.l2
     self.l_traj_action_client.send_goal(traj_goal_l)
 
-    r = rospy.Rate(10.0)
+    self._sound_client.say('You have the right to remain silent.')
+
+    r = rospy.Rate(self.REFRESH_RATE)
     # Keep a local copy because it will update
     #pose = self.pose
     #num_move_x = int((pose.pose.position.x - 0.3) * 10 / .1) + 1
@@ -117,7 +121,7 @@ class Kill():
         self._as.set_aborted()
         return;
       elif abs(pose.pose.position.y) > .1:
-        num_move_y = int((abs(pose.pose.position.y) - 0.1) * 10 / .2) + 1
+        num_move_y = int((abs(pose.pose.position.y) - 0.1) * self.REFRESH_RATE / .2) + 1
         #print str(pose.pose.position.x) + ', ' + str(num_move_x)
         twist_msg = Twist()
         twist_msg.linear = Vector3(0.0, 0.0, 0.0)
@@ -133,7 +137,7 @@ class Kill():
         #twist_msg.angular = Vector3(0.0, 0.0, pose.pose.position.y / (5 * abs(pose.pose.position.y)))
         #self._base_publisher.publish(twist_msg)
       elif pose.pose.position.x > .5:
-        num_move_x = int((pose.pose.position.x - 0.3) * 10 / .1) + 1
+        num_move_x = int((pose.pose.position.x - 0.3) * self.REFRESH_RATE / .1) + 1
         #print str(pose.pose.position.x) + ', ' + str(num_move_x)
         twist_msg = Twist()
         twist_msg.linear = Vector3(.1, 0.0, 0.0)
@@ -152,6 +156,8 @@ class Kill():
         break
       r.sleep()
 
+
+    self._sound_client.say("Anything you say do can and will be used against you in a court of law.")
 
     self.l_traj_action_client.wait_for_result(rospy.Duration(3))
     self.r_traj_action_client.wait_for_result(rospy.Duration(3))

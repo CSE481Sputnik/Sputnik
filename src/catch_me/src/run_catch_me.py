@@ -18,7 +18,7 @@ from pr2_common_action_msgs.msg import TuckArmsAction, TuckArmsGoal
 class CatchMe:
   FOLLOW_DIST = 0.5
   POSITION_THRESHOLD_DIST = 0.1
-  KILL_DIST_THRESHOLD = 1.25
+  KILL_DIST_THRESHOLD = 1
 
   def __init__(self):
     self._last_move = 0
@@ -80,20 +80,20 @@ class CatchMe:
     #else:
     #  self.base_r_client.cancel_goal()
     
-    distance_to_marker = (pose.pose.position.x ** 2) ** .5
+    distance_to_marker = ((pose.pose.position.x ** 2) + (pose.pose.position.y ** 2)) ** .5
     if (trans_pose is None or
           trans_pose.header.stamp.secs == 0 or
-          (trans_pose == self._last_trans_pose and distance_to_marker >= self.KILL_DIST_THRESHOLD)):
+          (trans_pose == self._last_trans_pose and (distance_to_marker >= self.KILL_DIST_THRESHOLD or pose.header.stamp + rospy.Duration(1.5) > rospy.Time.now()))):
       # Either, no marker known, or marker is old
+      self._last_move = self._last_move + 1
       if trans_pose == self._last_trans_pose:
         rospy.loginfo('Marker position unchanged')
       else:
         rospy.loginfo('No marker position found')
 
-      if self.head_s_client.get_state() != GoalStatus.ACTIVE:
+      if self._last_move > 4 and self.head_s_client.get_state() != GoalStatus.ACTIVE:
         goal = LocalSearchGoal(True)
         self.head_s_client.send_goal(goal)
-
 
     else:
       # New marker seen, try to move to it
@@ -131,16 +131,9 @@ class CatchMe:
       #robot_pose = self.tf.transformPose('/base_link', trans_pose)
       #print str(trans_pose_copy.header.stamp) + ' ' + str(rospy.Time.now())
       if self._last_trans_pose is not None and pose.header.stamp + rospy.Duration(1.5) > rospy.Time.now() and distance_to_marker < self.KILL_DIST_THRESHOLD:
+        print distance_to_marker
         rospy.loginfo('Going in for the kill!')
-        self.base_client.cancel_all_goals()
-        goal = KillGoal()
-        goal.pose = pose # Pose may be out of date, not much we can do since tf keeps failing...
-        self.kill_client.send_goal_and_wait(goal)
-        goal = TuckArmsGoal()
-        goal.tuck_left = True
-        goal.tuck_right = True
-        self.tuck_arm_client.send_goal(goal)
-        self.tuck_arm_client.wait_for_result(rospy.Duration(30.0))
+        self._attempt_kill(pose)
       elif (self._last_trans_pose is not None and
             self.distance_between(pos, self._last_trans_pose.pose.position) < self.POSITION_THRESHOLD_DIST):
         rospy.loginfo('Marker found close to last goal sent, NOT sending new goal')
@@ -151,7 +144,7 @@ class CatchMe:
         rospy.loginfo('Marker position updated.  Moving towards marker.')
         self._last_trans_pose = trans_pose_copy
 
-        self.move_to_marker(trans_pose)
+        self._move_to_marker(trans_pose)
 
 
     goal_status = self.base_client.get_state()
@@ -163,8 +156,19 @@ class CatchMe:
       update_rate = 0.5
     threading.Timer(update_rate, self.follow_marker).start()
 
+  def _attempt_kill(self, pose):
+    self.base_client.cancel_all_goals()
+    goal = KillGoal()
+    goal.pose = pose # Pose may be out of date, not much we can do since tf keeps failing...
+    self.kill_client.send_goal_and_wait(goal)
+    goal = TuckArmsGoal()
+    goal.tuck_left = True
+    goal.tuck_right = True
+    self.tuck_arm_client.send_goal(goal)
+    self.tuck_arm_client.wait_for_result(rospy.Duration(30.0))
 
-  def move_to_marker(self, trans_pose):
+
+  def _move_to_marker(self, trans_pose):
     pose = trans_pose
 
     goal = MoveBaseGoal()

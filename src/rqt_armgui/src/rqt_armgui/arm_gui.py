@@ -254,13 +254,13 @@ class ArmGUI(Plugin):
         '''Moves the arm to the desired joints'''
         traj_goal = JointTrajectoryGoal()
         traj_goal.trajectory.header.stamp = (rospy.Time.now() + rospy.Duration(0.1))
-        time_move = time_to_joint
+        time_move = time_to_joint + 3
         print "using following positions %s" % positions
         for pose in positions:
             velocities = [0] * len(pose)
             traj_goal.trajectory.points.append(JointTrajectoryPoint(positions=pose,
                             velocities=velocities, time_from_start=rospy.Duration(time_move)))
-            time_move += time_to_joint
+            time_move = time_move + time_to_joint
 	
         if (side_prefix == 'r'):
             traj_goal.trajectory.joint_names = self.r_joint_names
