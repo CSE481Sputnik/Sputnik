@@ -11,19 +11,22 @@ from catch_me import srv
 class DestinationService:
   def __init__(self):
     self.tf = tf.TransformListener()
+    # Let the transform build...
+    rospy.sleep(10)
     # I need a better default value...
     self.pose = None
+    self.trans_pose = None
     rospy.Subscriber('catch_me_destination_publisher', AlvarMarker, self.marker_cb)
     dest_serv = rospy.Service('catch_me_destination_service', srv.DestinationService, self.service_cb)
 
   def marker_cb(self, marker):
-    rospy.loginfo('AR Marker Pose updating')    
-    pose = marker.pose
-    pose.header = marker.header # Marker has the valid header
-    trans_pose = self.tf.transformPose('/map', pose)
-    trans_pose.pose.orientation.x = -trans_pose.pose.orientation.x
-    trans_pose.pose.orientation.y = -trans_pose.pose.orientation.y
-    self.pose = trans_pose
+    rospy.logdebug('AR Marker Pose updating')    
+    self.pose = marker.pose
+    self.pose.header = marker.header # Marker has the valid header
+    self.tf.waitForTransform('/odom_combined', self.pose.header.frame_id, rospy.Time.now(), rospy.Duration(4.0))
+    self.trans_pose = self.tf.transformPose('/odom_combined', self.pose)
+    self.trans_pose.pose.orientation.x = -self.trans_pose.pose.orientation.x
+    self.trans_pose.pose.orientation.y = -self.trans_pose.pose.orientation.y
 #        common_time = self.tf.getLatestCommonTime('/ar_marker_1', '/map')
 #        self.pose.header.stamp = common_time
 #        self.pose.header.frame_id = '/ar_marker_1'
@@ -32,8 +35,8 @@ class DestinationService:
          
 
   def service_cb(self, dummy):
-    rospy.loginfo('Returning pose ' + str(self.pose))
-    return srv.DestinationServiceResponse(self.pose)
+    rospy.logdebug('Returning trans_pose ' + str(self.pose))
+    return srv.DestinationServiceResponse(pose = self.pose, trans_pose = self.trans_pose)
 
 if __name__=='__main__':
     rospy.init_node('catch_me_destination_service_node')

@@ -58,7 +58,7 @@ class HeadObjectTracking():
         # The transform seems to aim high. Move it down a little...
         head_goal.target.point = Point(x, y, z - .4)
 
-        rospy.loginfo('Moving head to\n' + str(head_goal.target.point))
+        rospy.logdebug('Moving head to\n' + str(head_goal.target.point))
         
         self.head_client.send_goal(head_goal)
 #        if (self.head_client.get_state() != GoalStatus.SUCCEEDED):
