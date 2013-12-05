@@ -14,6 +14,7 @@ from catch_me.msg import *
 from actionlib_msgs.msg import GoalStatus
 import copy
 from pr2_common_action_msgs.msg import TuckArmsAction, TuckArmsGoal
+from std_srvs.srv import Empty
 
 class CatchMe:
   FOLLOW_DIST = 0.5
@@ -39,7 +40,7 @@ class CatchMe:
     rospy.loginfo('Waiting for catch_me_destination_service')
     rospy.wait_for_service('catch_me_destination_service')
     rospy.loginfo('Connected to catch_me_destination_service')
-    self.destination_service = rospy.ServiceProxy('catch_me_destination_service', srv.DestinationService)
+#    self.destination_service = rospy.ServiceProxy('catch_me_destination_service', srv.DestinationService)
 
     rospy.loginfo('Waiting for move_base action to come up')
     self.base_client = actionlib.SimpleActionClient('move_base_local', MoveBaseAction)
@@ -68,7 +69,8 @@ class CatchMe:
     threading.Timer(0, self.follow_marker).start()
 
   def follow_marker(self):
-    poses = self.destination_service()
+    destination_service = rospy.ServiceProxy('catch_me_destination_service', srv.DestinationService)
+    poses = destination_service()
     trans_pose = poses.trans_pose
     pose = poses.pose
     print trans_pose
@@ -94,6 +96,7 @@ class CatchMe:
       if self._last_move > 4 and self.head_s_client.get_state() != GoalStatus.ACTIVE:
         goal = LocalSearchGoal(True)
         self.head_s_client.send_goal(goal)
+        self._last_move = 0
 
     else:
       # New marker seen, try to move to it
@@ -166,6 +169,9 @@ class CatchMe:
     goal.tuck_right = True
     self.tuck_arm_client.send_goal(goal)
     self.tuck_arm_client.wait_for_result(rospy.Duration(30.0))
+    # Clear the arms from the cost map
+    clear_service = rospy.ServiceProxy('/move_base_local_node/clear_costmaps', Empty)
+    clear_service()
 
 
   def _move_to_marker(self, trans_pose):

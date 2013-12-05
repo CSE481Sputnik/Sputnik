@@ -73,7 +73,7 @@ class LocalSearch():
 
     #success = self.search_range(*(search_ranges[range_index]))
     
-    while not success and range_index < len(search_ranges) - 1:
+    while (not success) and range_index < len(search_ranges) - 1:
       if self._as.is_preempt_requested():
         rospy.loginfo('%s: Premepted' % self._action_name)
         self._as.set_preempted()

@@ -85,6 +85,26 @@ class Kill():
     #pose = self._tf.transformPose('/base_link', goal.pose)
     self._sound_client.say('Halt!')
 
+    # turn to face the marker before opening arms (code repeated later)
+    r = rospy.Rate(self.REFRESH_RATE)
+    while(True):
+      pose = self.pose
+      if abs(pose.pose.position.y) > .1:
+        num_move_y = int((abs(pose.pose.position.y) - 0.1) * self.REFRESH_RATE / .33) + 1
+        #print str(pose.pose.position.x) + ', ' + str(num_move_x)
+        twist_msg = Twist()
+        twist_msg.linear = Vector3(0.0, 0.0, 0.0)
+        twist_msg.angular = Vector3(0.0, 0.0, pose.pose.position.y / ( 3 * abs(pose.pose.position.y)))
+        for i in range(num_move_y):
+          if pose != self.pose:
+            break
+          self._base_publisher.publish(twist_msg)
+          r.sleep()
+        pose.pose.position.y = 0
+      else:
+        break
+
+    # open arms
     traj_goal_r = JointTrajectoryGoal()
     traj_goal_r.trajectory.joint_names = self.r_joint_names
     traj_goal_l = JointTrajectoryGoal()
@@ -103,7 +123,6 @@ class Kill():
 
     self._sound_client.say('You have the right to remain silent.')
 
-    r = rospy.Rate(self.REFRESH_RATE)
     # Keep a local copy because it will update
     #pose = self.pose
     #num_move_x = int((pose.pose.position.x - 0.3) * 10 / .1) + 1
@@ -114,18 +133,22 @@ class Kill():
     #for i in range(num_move_x):
     #  self._base_publisher.publish(twist_msg)
     #  r.sleep()
+
+    # track the marker as much as we can
     while True:
       pose = self.pose
+      # too far away
       if abs(pose.pose.position.x > 1.5):
         rospy.loginfo('Target out of range: ' + str(pose.pose.position.x))
         self._as.set_aborted()
         return;
+      # too far to the side -> rotate
       elif abs(pose.pose.position.y) > .1:
-        num_move_y = int((abs(pose.pose.position.y) - 0.1) * self.REFRESH_RATE / .2) + 1
+        num_move_y = int((abs(pose.pose.position.y) - 0.1) * self.REFRESH_RATE / .33) + 1
         #print str(pose.pose.position.x) + ', ' + str(num_move_x)
         twist_msg = Twist()
         twist_msg.linear = Vector3(0.0, 0.0, 0.0)
-        twist_msg.angular = Vector3(0.0, 0.0, pose.pose.position.y / (5 * abs(pose.pose.position.y)))
+        twist_msg.angular = Vector3(0.0, 0.0, pose.pose.position.y / (3 * abs(pose.pose.position.y)))
         for i in range(num_move_y):
           if pose != self.pose:
             break
@@ -136,6 +159,8 @@ class Kill():
         #twist_msg.linear = Vector3(0.0, 0.0, 0.0)
         #twist_msg.angular = Vector3(0.0, 0.0, pose.pose.position.y / (5 * abs(pose.pose.position.y)))
         #self._base_publisher.publish(twist_msg)
+
+      # now we are going to move in for the kill, but only until .5 meters away (don't want to run suspect over)
       elif pose.pose.position.x > .5:
         num_move_x = int((pose.pose.position.x - 0.3) * self.REFRESH_RATE / .1) + 1
         #print str(pose.pose.position.x) + ', ' + str(num_move_x)
@@ -152,11 +177,13 @@ class Kill():
         #twist_msg.linear = Vector3(.1, 0.0, 0.0)
         #twist_msg.angular = Vector3(0.0, 0.0, 0.0)
         #self._base_publisher.publish(twist_msg)
+     
+      # susupect is within hugging range!!!
       else:
         break
       r.sleep()
 
-
+    # after exiting the loop, we should be ready to capture -> send close arms goal
     self._sound_client.say("Anything you say do can and will be used against you in a court of law.")
 
     self.l_traj_action_client.wait_for_result(rospy.Duration(3))
